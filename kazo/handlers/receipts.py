@@ -211,7 +211,10 @@ async def _handle_receipt(message: Message, bot: Bot, image_path: str):
 
     items_text = ""
     if items:
-        items_lines = [f"  • {i['name']}: {i['price']:.2f}" for i in items[:10]]
+        items_lines = [
+            f"  • {i['name']}: {i['price']:.2f}" if i.get("price") is not None else f"  • {i['name']}"
+            for i in items[:10]
+        ]
         items_text = "\n" + "\n".join(items_lines)
 
     currency_note = f" ({total} {currency})" if currency != base else ""
@@ -341,7 +344,10 @@ async def _process_product_prices(message: Message, session: dict):
 
     items_text = ""
     if items:
-        items_lines = [f"  • {i['name']}: {i['price']:.2f}" for i in items[:10]]
+        items_lines = [
+            f"  • {i['name']}: {i['price']:.2f}" if i.get("price") is not None else f"  • {i['name']}"
+            for i in items[:10]
+        ]
         items_text = "\n" + "\n".join(items_lines)
 
     currency_note = f" ({total} {currency})" if currency != base else ""

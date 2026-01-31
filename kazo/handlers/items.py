@@ -37,7 +37,10 @@ async def cmd_price(message: Message):
         await message.reply(f'No price history found for "{args}".')
         return
 
-    prices = [r["price"] * r.get("quantity", 1) for r in results]
+    prices = [r["price"] * r.get("quantity", 1) for r in results if r.get("price") is not None]
+    if not prices:
+        await message.reply(f'No priced records found for "{args}".')
+        return
     min_p, max_p, avg_p = min(prices), max(prices), sum(prices) / len(prices)
     base = await get_base_currency(message.chat.id)
     currency = results[0].get("currency", base)

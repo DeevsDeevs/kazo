@@ -54,7 +54,7 @@ def _items_keyboard(items: list[dict]) -> InlineKeyboardMarkup:
         rows.append(
             [
                 InlineKeyboardButton(
-                    text=f"Remove: {item['name']} ({item['price']:.2f})",
+                    text=f"Remove: {item['name']}" + (f" ({item['price']:.2f})" if item.get('price') is not None else ""),
                     callback_data=f"expense:remove:{i}",
                 )
             ]
@@ -83,7 +83,10 @@ async def _build_receipt_display(pending: PendingExpense) -> str:
     currency_note = f" ({total:.2f} {currency})" if currency != base else ""
     items_text = ""
     if items:
-        items_lines = [f"  • {i['name']}: {i['price']:.2f}" for i in items[:10]]
+        items_lines = [
+            f"  • {i['name']}: {i['price']:.2f}" if i.get("price") is not None else f"  • {i['name']}"
+            for i in items[:10]
+        ]
         items_text = "\n" + "\n".join(items_lines)
 
     return (
@@ -116,7 +119,7 @@ async def on_confirm(callback: CallbackQuery):
 
     expense = pending.expense
     if pending.items is not None:
-        new_total = sum(i["price"] for i in pending.items)
+        new_total = sum(i["price"] for i in pending.items if i.get("price") is not None)
         if new_total != expense.amount:
             expense.amount = new_total
             expense.amount_eur = new_total / expense.exchange_rate if expense.exchange_rate else new_total

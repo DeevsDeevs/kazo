@@ -144,14 +144,16 @@ async def _save_items_from_json(db, expense_id: int, items_json: str, currency: 
         if not isinstance(item, dict):
             continue
         name = item.get("name") or item.get("item")
-        price = item.get("price") or item.get("amount")
+        price = item.get("price")
+        if price is None:
+            price = item.get("amount")
         if not name or price is None:
             continue
         try:
             price = float(price)
+            quantity = float(item.get("quantity", 1))
         except (ValueError, TypeError):
             continue
-        quantity = float(item.get("quantity", 1))
         item_currency = item.get("currency", currency)
         await db.execute(
             "INSERT INTO expense_items (expense_id, name, price, currency, quantity) VALUES (?, ?, ?, ?, ?)",
