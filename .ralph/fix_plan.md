@@ -113,7 +113,7 @@ EUR is hardcoded across ~40 places in the codebase (display strings, comparisons
 - [x] **Format entire codebase**: Ran `ruff format .` (36 files reformatted) and `ruff check --fix .` (46 auto-fixed). Fixed 16 remaining: duplicate `cmd_help`, bare raises without `from`, long lines, unused vars, ambiguous unicode, double-split in items.py.
 - [x] **Re-review each module**: Python dev review found: dead `get_rate_to_eur`/`convert_to_eur` (removed), double-split in items.py (fixed), duplicated progress bar calc in summary.py (fixed). Noted but deferred: broad except clauses, display logic duplication, magic numbers.
 - [x] **Verify tests still pass**: 149 tests passing after all changes.
-- [ ] **Update README**: Rewrite README.md to focus on functionality and user-facing features (what Kazo does, all commands, how to use conversational features, photo/receipt support, budgets, subscriptions, etc). Less codebase internals, more "here's what you can do with it". Keep setup/install/docker instructions.
+- [x] **Update README**: Rewrite README.md to focus on functionality and user-facing features (what Kazo does, all commands, how to use conversational features, photo/receipt support, budgets, subscriptions, etc). Less codebase internals, more "here's what you can do with it". Keep setup/install/docker instructions.
 
 ## Completed (Pre-Ralph)
 
