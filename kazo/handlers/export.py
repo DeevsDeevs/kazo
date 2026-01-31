@@ -68,7 +68,7 @@ async def cmd_export(message: Message):
                 e.get("category", ""),
                 e.get("amount", ""),
                 e.get("original_currency", ""),
-                e.get("amount_eur", ""),
+                e.get("amount_base", ""),
                 e.get("source", ""),
                 e.get("note", ""),
             ]

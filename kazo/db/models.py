@@ -10,7 +10,7 @@ class Expense:
     store: str | None
     amount: float
     original_currency: str
-    amount_eur: float
+    amount_base: float
     exchange_rate: float
     category: str | None
     items_json: str | None
@@ -25,7 +25,7 @@ class ExpenseItem:
     id: int | None
     expense_id: int
     name: str
-    price: float
+    price: float | None
     currency: str
     quantity: float = 1.0
 
@@ -35,7 +35,7 @@ class Budget:
     id: int | None
     chat_id: int
     category: str | None
-    amount_eur: float
+    amount_base: float
 
 
 @dataclass(slots=True)
@@ -45,7 +45,7 @@ class Subscription:
     name: str
     amount: float
     original_currency: str
-    amount_eur: float
+    amount_base: float
     frequency: str = "monthly"
     category: str | None = None
     billing_day: int | None = None

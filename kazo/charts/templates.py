@@ -95,7 +95,7 @@ def _save(fig: go.Figure) -> str:
     return tmp.name
 
 
-async def spending_by_category_chart(data: list[dict[str, Any]], cur: str = "EUR") -> str | None:
+async def spending_by_category_chart(data: list[dict[str, Any]], cur: str) -> str | None:
     if not data:
         return None
 
@@ -150,7 +150,7 @@ async def spending_by_category_chart(data: list[dict[str, Any]], cur: str = "EUR
     return _save(fig)
 
 
-async def monthly_trend_chart(data: list[dict[str, Any]], cur: str = "EUR") -> str | None:
+async def monthly_trend_chart(data: list[dict[str, Any]], cur: str) -> str | None:
     if not data:
         return None
 
@@ -196,7 +196,7 @@ async def monthly_trend_chart(data: list[dict[str, Any]], cur: str = "EUR") -> s
     return _save(fig)
 
 
-async def daily_spending_chart(data: list[dict[str, Any]], cur: str = "EUR", budget: float | None = None) -> str | None:
+async def daily_spending_chart(data: list[dict[str, Any]], cur: str, budget: float | None = None) -> str | None:
     if not data:
         return None
 

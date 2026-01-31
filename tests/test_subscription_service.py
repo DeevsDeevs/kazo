@@ -16,7 +16,7 @@ async def test_add_and_list():
         name="Netflix",
         amount=15.99,
         currency="USD",
-        amount_eur=14.71,
+        amount_base=14.71,
         frequency="monthly",
     )
     assert sub_id >= 1
@@ -32,7 +32,7 @@ async def test_remove():
         name="Spotify",
         amount=9.99,
         currency="EUR",
-        amount_eur=9.99,
+        amount_base=9.99,
     )
     removed = await remove_subscription(1, "spotify")
     assert removed is True
@@ -55,12 +55,12 @@ async def test_refresh_updates_rate(mock_base, mock_convert):
         name="Netflix",
         amount=15.99,
         currency="USD",
-        amount_eur=14.71,
+        amount_base=14.71,
         frequency="monthly",
     )
     await refresh_subscription_rates(1)
     subs = await get_subscriptions(1)
-    assert subs[0]["amount_eur"] == 16.50
+    assert subs[0]["amount_base"] == 16.50
 
 
 @patch("kazo.services.subscription_service.convert_to_base", new_callable=AsyncMock)
@@ -71,7 +71,7 @@ async def test_refresh_skips_eur(mock_base, mock_convert):
         name="Spotify",
         amount=9.99,
         currency="EUR",
-        amount_eur=9.99,
+        amount_base=9.99,
     )
     await refresh_subscription_rates(1)
     mock_convert.assert_not_called()
@@ -86,12 +86,12 @@ async def test_refresh_handles_api_failure(mock_base, mock_convert):
         name="Netflix",
         amount=15.99,
         currency="USD",
-        amount_eur=14.71,
+        amount_base=14.71,
         frequency="monthly",
     )
     await refresh_subscription_rates(1)
     subs = await get_subscriptions(1)
-    assert subs[0]["amount_eur"] == 14.71
+    assert subs[0]["amount_base"] == 14.71
 
 
 async def test_add_subscription_with_billing_day():
@@ -100,7 +100,7 @@ async def test_add_subscription_with_billing_day():
         name="Netflix",
         amount=15.99,
         currency="USD",
-        amount_eur=14.71,
+        amount_base=14.71,
         frequency="monthly",
         billing_day=15,
     )
@@ -114,7 +114,7 @@ async def test_add_subscription_without_billing_day():
         name="Spotify",
         amount=9.99,
         currency="EUR",
-        amount_eur=9.99,
+        amount_base=9.99,
         frequency="monthly",
     )
     subs = await get_subscriptions(1)

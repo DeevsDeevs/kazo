@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS expenses (
     store TEXT,
     amount REAL NOT NULL CHECK(amount > 0),
     original_currency TEXT NOT NULL,
-    amount_eur REAL NOT NULL CHECK(amount_eur > 0),
+    amount_base REAL NOT NULL CHECK(amount_base > 0),
     exchange_rate REAL NOT NULL CHECK(exchange_rate > 0),
     category TEXT,
     items_json TEXT,
@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     name TEXT NOT NULL,
     amount REAL NOT NULL CHECK(amount > 0),
     original_currency TEXT NOT NULL,
-    amount_eur REAL NOT NULL CHECK(amount_eur > 0),
+    amount_base REAL NOT NULL CHECK(amount_base > 0),
     frequency TEXT NOT NULL DEFAULT 'monthly' CHECK(frequency IN ('daily', 'weekly', 'monthly', 'yearly')),
     category TEXT,
     billing_day INTEGER CHECK(billing_day IS NULL OR (billing_day >= 1 AND billing_day <= 31)),
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 
 CREATE TABLE IF NOT EXISTS exchange_rates (
     currency TEXT PRIMARY KEY,
-    rate_to_eur REAL NOT NULL CHECK(rate_to_eur > 0),
+    rate_to_base REAL NOT NULL CHECK(rate_to_base > 0),
     fetched_at TIMESTAMP NOT NULL
 );
 
@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS expense_items (
     id INTEGER PRIMARY KEY,
     expense_id INTEGER NOT NULL REFERENCES expenses(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
-    price REAL NOT NULL,
+    price REAL,
     currency TEXT NOT NULL,
     quantity REAL NOT NULL DEFAULT 1
 );
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS budgets (
     id INTEGER PRIMARY KEY,
     chat_id INTEGER NOT NULL,
     category TEXT,
-    amount_eur REAL NOT NULL CHECK(amount_eur > 0),
+    amount_base REAL NOT NULL CHECK(amount_base > 0),
     UNIQUE(chat_id, category)
 );
 
@@ -107,17 +107,3 @@ async def init_db():
     db = await get_db()
     await db.executescript(SCHEMA)
     await db.commit()
-    # Migrations for existing databases
-    for migration in [
-        "ALTER TABLE expenses ADD COLUMN note TEXT",
-        "ALTER TABLE subscriptions ADD COLUMN billing_day INTEGER"
-        " CHECK(billing_day IS NULL OR (billing_day >= 1 AND billing_day <= 31))",
-    ]:
-        try:
-            await db.execute(migration)
-            await db.commit()
-        except Exception:
-            pass
-    from kazo.services.expense_service import migrate_items_json
-
-    await migrate_items_json()

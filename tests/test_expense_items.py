@@ -4,7 +4,6 @@ from datetime import date
 from kazo.db.models import Expense
 from kazo.services.expense_service import (
     get_expense_items,
-    migrate_items_json,
     save_expense,
     save_expense_items,
     search_items_by_name,
@@ -19,7 +18,7 @@ def _make_expense(**overrides) -> Expense:
         store="Lidl",
         amount=25.0,
         original_currency="EUR",
-        amount_eur=25.0,
+        amount_base=25.0,
         exchange_rate=1.0,
         category="groceries",
         items_json=None,
@@ -101,37 +100,6 @@ async def test_search_items_wrong_chat():
 
     results = await search_items_by_name("Cheese", chat_id=999)
     assert results == []
-
-
-async def test_migrate_items_json(test_db):
-    # Insert expense with items_json directly (bypassing save_expense to simulate old data)
-    cursor = await test_db.execute(
-        """INSERT INTO expenses
-        (chat_id, user_id, store, amount, original_currency, amount_eur,
-         exchange_rate, category, items_json, source, expense_date)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        (
-            1,
-            100,
-            "Shop",
-            10.0,
-            "EUR",
-            10.0,
-            1.0,
-            "groceries",
-            json.dumps([{"name": "Eggs", "price": 3.0}]),
-            "receipt",
-            "2025-01-01",
-        ),
-    )
-    await test_db.commit()
-    expense_id = cursor.lastrowid
-
-    await migrate_items_json()
-
-    rows = await get_expense_items(expense_id)
-    assert len(rows) == 1
-    assert rows[0]["name"] == "Eggs"
 
 
 async def test_cascade_delete_items(test_db):

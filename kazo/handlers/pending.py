@@ -78,7 +78,7 @@ async def _build_receipt_display(pending: PendingExpense) -> str:
     if not total:
         total = expense.amount
 
-    amount_eur = total * (expense.amount_eur / expense.amount) if expense.amount else total
+    amount_base = total * (expense.amount_base / expense.amount) if expense.amount else total
 
     base = await get_base_currency(expense.chat_id)
     currency_note = f" ({total:.2f} {currency})" if currency != base else ""
@@ -92,7 +92,7 @@ async def _build_receipt_display(pending: PendingExpense) -> str:
 
     return (
         f"🧾 Receipt processed\n"
-        f"💰 {format_amount(amount_eur, base)}{currency_note}\n"
+        f"💰 {format_amount(amount_base, base)}{currency_note}\n"
         f"🏷 {expense.category}\n"
         f"📅 {expense.expense_date}" + (f"\n🏪 {expense.store}" if expense.store else "") + items_text
     )
@@ -125,7 +125,7 @@ async def on_confirm(callback: CallbackQuery):
             new_total = expense.amount
         if new_total != expense.amount:
             expense.amount = new_total
-            expense.amount_eur = new_total / expense.exchange_rate if expense.exchange_rate else new_total
+            expense.amount_base = round(new_total * expense.exchange_rate, 2) if expense.exchange_rate else new_total
             expense.items_json = json.dumps(pending.items)
 
     display = await _build_receipt_display(pending) if pending.items is not None else pending.display_text
@@ -133,10 +133,10 @@ async def on_confirm(callback: CallbackQuery):
     await link_bot_message(callback.message.chat.id, callback.message.message_id, expense_id)
 
     suffix = "\n\nSaved ✓ (reply to edit)"
-    if expense.store and await detect_recurring(expense.chat_id, expense.store, expense.amount_eur):
+    if expense.store and await detect_recurring(expense.chat_id, expense.store, expense.amount_base):
         suffix += (
             f"\n\n💡 You've paid {expense.store} similar amounts multiple times. "
-            f"Consider adding as subscription: /addsub {expense.store} {expense.amount_eur:.2f} "
+            f"Consider adding as subscription: /addsub {expense.store} {expense.amount_base:.2f} "
             f"{expense.original_currency} monthly"
         )
 

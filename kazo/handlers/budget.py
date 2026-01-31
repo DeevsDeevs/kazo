@@ -58,7 +58,7 @@ async def cmd_setbudget(message: Message):
     base = await get_base_currency(message.chat.id)
     b = await set_budget(message.chat.id, amount, category)
     label = b.category or "Total"
-    await message.answer(f"Budget set: {label} → {format_amount(b.amount_eur, base)}/month")
+    await message.answer(f"Budget set: {label} → {format_amount(b.amount_base, base)}/month")
 
 
 @router.message(Command("removebudget"))

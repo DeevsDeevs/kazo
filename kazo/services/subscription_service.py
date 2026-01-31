@@ -17,15 +17,15 @@ async def refresh_subscription_rates(chat_id: int) -> None:
             continue
         try:
             new_amount, _ = await convert_to_base(s["amount"], s["original_currency"], chat_id)
-            if new_amount != s["amount_eur"]:
+            if new_amount != s["amount_base"]:
                 await db.execute(
-                    "UPDATE subscriptions SET amount_eur = ? WHERE id = ?",
+                    "UPDATE subscriptions SET amount_base = ? WHERE id = ?",
                     (new_amount, s["id"]),
                 )
                 logger.debug(
                     "Updated %s rate: %.2f -> %.2f %s",
                     s["name"],
-                    s["amount_eur"],
+                    s["amount_base"],
                     new_amount,
                     base,
                 )
@@ -49,7 +49,7 @@ async def add_subscription(
     name: str,
     amount: float,
     currency: str,
-    amount_eur: float,
+    amount_base: float,
     frequency: str = "monthly",
     category: str | None = None,
     billing_day: int | None = None,
@@ -57,9 +57,9 @@ async def add_subscription(
     db = await get_db()
     cursor = await db.execute(
         """INSERT INTO subscriptions
-        (chat_id, name, amount, original_currency, amount_eur, frequency, category, billing_day)
+        (chat_id, name, amount, original_currency, amount_base, frequency, category, billing_day)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-        (chat_id, name, amount, currency, amount_eur, frequency, category, billing_day),
+        (chat_id, name, amount, currency, amount_base, frequency, category, billing_day),
     )
     await db.commit()
     return cursor.lastrowid

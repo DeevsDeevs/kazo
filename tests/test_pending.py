@@ -31,7 +31,7 @@ def _make_expense(**overrides) -> Expense:
         store="TestStore",
         amount=50.0,
         original_currency="EUR",
-        amount_eur=50.0,
+        amount_base=50.0,
         exchange_rate=1.0,
         category="groceries",
         items_json=None,
@@ -174,7 +174,7 @@ async def test_on_confirm_expired():
 async def test_on_confirm_with_edited_items():
     """Confirm after removing items recalculates total."""
     items = [{"name": "Milk", "price": 3.00}, {"name": "Bread", "price": 2.00}]
-    expense = _make_expense(amount=5.0, amount_eur=5.0, items_json=json.dumps(items))
+    expense = _make_expense(amount=5.0, amount_base=5.0, items_json=json.dumps(items))
     key = _make_key(100, 200)
     # Simulate having removed Bread — only Milk remains
     _pending[key] = PendingExpense(
@@ -194,7 +194,7 @@ async def test_on_confirm_with_edited_items():
         await on_confirm(callback)
         saved = mock_save.call_args[0][0]
         assert saved.amount == 3.0
-        assert saved.amount_eur == 3.0
+        assert saved.amount_base == 3.0
 
 
 @pytest.mark.asyncio
@@ -235,7 +235,7 @@ async def test_on_edit_items_no_items():
 @pytest.mark.asyncio
 async def test_on_remove_item():
     items = [{"name": "Milk", "price": 2.50}, {"name": "Bread", "price": 1.80}]
-    expense = _make_expense(amount=4.30, amount_eur=4.30, items_json=json.dumps(items))
+    expense = _make_expense(amount=4.30, amount_base=4.30, items_json=json.dumps(items))
     key = _make_key(100, 200)
     _pending[key] = PendingExpense(expense=expense, display_text="test", items=list(items))
 
@@ -289,7 +289,7 @@ async def test_on_cancel():
 @pytest.mark.asyncio
 async def test_build_receipt_display():
     items = [{"name": "Milk", "price": 2.50}, {"name": "Bread", "price": 1.80}]
-    expense = _make_expense(amount=4.30, amount_eur=4.30, source="receipt")
+    expense = _make_expense(amount=4.30, amount_base=4.30, source="receipt")
     pending = PendingExpense(expense=expense, display_text="", items=items)
 
     display = await _build_receipt_display(pending)
@@ -303,7 +303,7 @@ async def test_build_receipt_display_foreign_currency():
     items = [{"name": "Item", "price": 100.0}]
     expense = _make_expense(
         amount=200.0,
-        amount_eur=50.0,
+        amount_base=50.0,
         original_currency="TRY",
         exchange_rate=4.0,
         source="receipt",

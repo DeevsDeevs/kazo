@@ -1,7 +1,7 @@
 You are editing an existing expense based on the user's correction.
 
 Original expense:
-- Amount: {amount} {currency} ({amount_eur} {base_currency})
+- Amount: {amount} {currency} ({amount_base} {base_currency})
 - Category: {category}
 - Store: {store}
 - Date: {expense_date}

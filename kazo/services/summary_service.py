@@ -6,7 +6,7 @@ from kazo.db.database import get_db
 async def spending_by_category(chat_id: int, start_date: date, end_date: date) -> list[dict]:
     db = await get_db()
     cursor = await db.execute(
-        """SELECT category, SUM(amount_eur) as total, COUNT(*) as count
+        """SELECT category, SUM(amount_base) as total, COUNT(*) as count
         FROM expenses
         WHERE chat_id = ? AND expense_date >= ? AND expense_date <= ?
         GROUP BY category ORDER BY total DESC""",
@@ -20,7 +20,7 @@ async def monthly_totals(chat_id: int, months: int = 6) -> list[dict]:
     db = await get_db()
     cursor = await db.execute(
         """SELECT strftime('%Y-%m', expense_date) as month,
-                  SUM(amount_eur) as total, COUNT(*) as count
+                  SUM(amount_base) as total, COUNT(*) as count
         FROM expenses
         WHERE chat_id = ?
         GROUP BY month ORDER BY month DESC LIMIT ?""",
@@ -33,7 +33,7 @@ async def monthly_totals(chat_id: int, months: int = 6) -> list[dict]:
 async def daily_spending(chat_id: int, start_date: date, end_date: date) -> list[dict]:
     db = await get_db()
     cursor = await db.execute(
-        """SELECT expense_date, SUM(amount_eur) as total, COUNT(*) as count
+        """SELECT expense_date, SUM(amount_base) as total, COUNT(*) as count
         FROM expenses
         WHERE chat_id = ? AND expense_date >= ? AND expense_date <= ?
         GROUP BY expense_date ORDER BY expense_date""",
@@ -46,9 +46,9 @@ async def daily_spending(chat_id: int, start_date: date, end_date: date) -> list
 async def all_time_stats(chat_id: int) -> dict | None:
     db = await get_db()
     cursor = await db.execute(
-        """SELECT COUNT(*) as count, COALESCE(SUM(amount_eur), 0) as total,
-                  COALESCE(AVG(amount_eur), 0) as avg_expense,
-                  COALESCE(MAX(amount_eur), 0) as max_expense,
+        """SELECT COUNT(*) as count, COALESCE(SUM(amount_base), 0) as total,
+                  COALESCE(AVG(amount_base), 0) as avg_expense,
+                  COALESCE(MAX(amount_base), 0) as max_expense,
                   MIN(expense_date) as first_date, MAX(expense_date) as last_date
         FROM expenses WHERE chat_id = ?""",
         (chat_id,),
@@ -59,7 +59,7 @@ async def all_time_stats(chat_id: int) -> dict | None:
     stats = dict(row)
 
     cursor = await db.execute(
-        """SELECT category, SUM(amount_eur) as total
+        """SELECT category, SUM(amount_base) as total
         FROM expenses WHERE chat_id = ?
         GROUP BY category ORDER BY total DESC LIMIT 5""",
         (chat_id,),
@@ -67,7 +67,7 @@ async def all_time_stats(chat_id: int) -> dict | None:
     stats["top_categories"] = [dict(r) for r in await cursor.fetchall()]
 
     cursor = await db.execute(
-        """SELECT store, SUM(amount_eur) as total, COUNT(*) as count
+        """SELECT store, SUM(amount_base) as total, COUNT(*) as count
         FROM expenses WHERE chat_id = ? AND store IS NOT NULL
         GROUP BY store ORDER BY total DESC LIMIT 5""",
         (chat_id,),
@@ -75,7 +75,7 @@ async def all_time_stats(chat_id: int) -> dict | None:
     stats["top_stores"] = [dict(r) for r in await cursor.fetchall()]
 
     cursor = await db.execute(
-        """SELECT strftime('%Y-%m', expense_date) as month, SUM(amount_eur) as total
+        """SELECT strftime('%Y-%m', expense_date) as month, SUM(amount_base) as total
         FROM expenses WHERE chat_id = ?
         GROUP BY month ORDER BY month DESC LIMIT 2""",
         (chat_id,),

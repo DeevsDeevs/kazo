@@ -122,7 +122,7 @@ async def cmd_undo(message: Message):
         return
     base = await get_base_currency(message.chat.id)
     await message.answer(
-        f"Removed: {format_amount(deleted['amount_eur'], base)} — {deleted['category']} ({deleted['expense_date']})"
+        f"Removed: {format_amount(deleted['amount_base'], base)} — {deleted['category']} ({deleted['expense_date']})"
     )
 
 
@@ -148,7 +148,7 @@ async def cmd_edit(message: Message):
     )
     text = (
         f"Expense #{expense['id']}:\n"
-        f"💰 {format_amount(expense['amount_eur'], base)}{currency_note}\n"
+        f"💰 {format_amount(expense['amount_base'], base)}{currency_note}\n"
         f"🏷 {expense['category']}\n"
         f"📅 {expense['expense_date']}"
         + (f"\n🏪 {expense['store']}" if expense.get("store") else "")
@@ -241,7 +241,7 @@ async def _handle_query(message: Message):
 
     summary_lines = []
     for e in expenses[:50]:
-        line = f"{e['expense_date']} | {e.get('store', '?')} | {e['category']} | {e['amount_eur']:.2f} {base}"
+        line = f"{e['expense_date']} | {e.get('store', '?')} | {e['category']} | {e['amount_base']:.2f} {base}"
         if e.get("note"):
             line += f" | {e['note']}"
         summary_lines.append(line)
@@ -388,7 +388,7 @@ async def handle_text_expense(message: Message):
         logger.warning("Invalid date from Claude: %s, using today", expense_date, extra={"chat_id": message.chat.id})
         expense_date = date.today().isoformat()
 
-    amount_eur, rate = await convert_to_base(amount, currency, message.chat.id)
+    amount_base, rate = await convert_to_base(amount, currency, message.chat.id)
 
     expense = Expense(
         id=None,
@@ -397,7 +397,7 @@ async def handle_text_expense(message: Message):
         store=store,
         amount=amount,
         original_currency=currency,
-        amount_eur=amount_eur,
+        amount_base=amount_base,
         exchange_rate=rate,
         category=category,
         items_json=items_json,
@@ -427,7 +427,7 @@ async def handle_text_expense(message: Message):
 
     display_text = (
         f"✅ {parsed.get('description', 'Expense recorded')}\n"
-        f"💰 {format_amount(amount_eur, base)}{currency_note}\n"
+        f"💰 {format_amount(amount_base, base)}{currency_note}\n"
         f"🏷 {category}{cat_note}\n"
         f"📅 {expense_date}" + (f"\n🏪 {store}" if store else "") + (f"\n📝 {note}" if note else "") + items_text
     )
@@ -467,7 +467,7 @@ async def handle_edit_reply(message: Message):
         .format(
             amount=expense["amount"],
             currency=expense["original_currency"],
-            amount_eur=expense["amount_eur"],
+            amount_base=expense["amount_base"],
             category=expense["category"],
             store=expense["store"] or "none",
             expense_date=expense["expense_date"],
@@ -497,10 +497,10 @@ async def handle_edit_reply(message: Message):
     if "amount" in changes or "currency" in changes:
         amt = changes.get("amount", expense["amount"])
         cur = changes.get("currency", expense["original_currency"])
-        amount_eur, rate = await convert_to_base(amt, cur, message.chat.id)
+        amount_base, rate = await convert_to_base(amt, cur, message.chat.id)
         changes["amount"] = amt
         changes["original_currency"] = cur
-        changes["amount_eur"] = amount_eur
+        changes["amount_base"] = amount_base
         changes["exchange_rate"] = rate
         if "currency" in changes:
             del changes["currency"]
@@ -518,7 +518,7 @@ async def handle_edit_reply(message: Message):
         if k in ("exchange_rate",):
             continue
         label = k.replace("_", " ").title()
-        if k == "amount_eur":
+        if k == "amount_base":
             parts.append(f"Amount: {format_amount(v, base)}")
         elif k == "original_currency":
             continue

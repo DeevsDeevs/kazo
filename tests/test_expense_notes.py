@@ -13,7 +13,7 @@ def _make_expense(**overrides) -> Expense:
         store="TestStore",
         amount=25.0,
         original_currency="EUR",
-        amount_eur=25.0,
+        amount_base=25.0,
         exchange_rate=1.0,
         category="groceries",
         items_json=None,

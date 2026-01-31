@@ -63,7 +63,7 @@ async def cmd_subs(message: Message):
         return
 
     base = await get_base_currency(message.chat.id)
-    total_monthly = sum(_to_monthly(s["amount_eur"], s["frequency"]) for s in subs)
+    total_monthly = sum(_to_monthly(s["amount_base"], s["frequency"]) for s in subs)
     lines = []
     for s in subs:
         currency_note = f" ({s['amount']} {s['original_currency']})" if s["original_currency"] != base else ""
@@ -73,7 +73,7 @@ async def cmd_subs(message: Message):
             days_until = (next_date - date.today()).days
             billing_info = f" — next: {next_date.strftime('%b %d')} ({days_until}d)"
         lines.append(
-            f"• {s['name']}: {format_amount(s['amount_eur'], base)}{currency_note} ({s['frequency']}){billing_info}"
+            f"• {s['name']}: {format_amount(s['amount_base'], base)}{currency_note} ({s['frequency']}){billing_info}"
         )
 
     await message.answer(
@@ -119,21 +119,21 @@ async def cmd_addsub(message: Message):
             await message.answer("Billing day must be a number (1-31).")
             return
 
-    amount_eur, _ = await convert_to_base(amount, currency, message.chat.id)
+    amount_base, _ = await convert_to_base(amount, currency, message.chat.id)
 
     await add_subscription(
         chat_id=message.chat.id,
         name=name,
         amount=amount,
         currency=currency,
-        amount_eur=amount_eur,
+        amount_base=amount_base,
         frequency=frequency,
         category="subscriptions",
         billing_day=billing_day,
     )
 
     day_info = f" (bills on day {billing_day})" if billing_day else ""
-    await message.answer(f"Added subscription: {name} {format_amount(amount_eur, base)}/{frequency}{day_info}")
+    await message.answer(f"Added subscription: {name} {format_amount(amount_base, base)}/{frequency}{day_info}")
 
 
 @router.message(Command("removesub"))

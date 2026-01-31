@@ -13,7 +13,7 @@ def _exp(**kw) -> Expense:
         store=None,
         amount=10.0,
         original_currency="EUR",
-        amount_eur=10.0,
+        amount_base=10.0,
         exchange_rate=1.0,
         category="groceries",
         items_json=None,
@@ -25,9 +25,9 @@ def _exp(**kw) -> Expense:
 
 
 async def test_spending_by_category():
-    await save_expense(_exp(category="groceries", amount_eur=30.0))
-    await save_expense(_exp(category="groceries", amount_eur=20.0))
-    await save_expense(_exp(category="dining", amount_eur=15.0))
+    await save_expense(_exp(category="groceries", amount_base=30.0))
+    await save_expense(_exp(category="groceries", amount_base=20.0))
+    await save_expense(_exp(category="dining", amount_base=15.0))
 
     result = await spending_by_category(1, date(2025, 3, 1), date(2025, 3, 31))
     assert len(result) == 2
@@ -36,9 +36,9 @@ async def test_spending_by_category():
 
 
 async def test_daily_spending():
-    await save_expense(_exp(expense_date=date(2025, 3, 1), amount_eur=10.0))
-    await save_expense(_exp(expense_date=date(2025, 3, 1), amount_eur=5.0))
-    await save_expense(_exp(expense_date=date(2025, 3, 2), amount_eur=20.0))
+    await save_expense(_exp(expense_date=date(2025, 3, 1), amount_base=10.0))
+    await save_expense(_exp(expense_date=date(2025, 3, 1), amount_base=5.0))
+    await save_expense(_exp(expense_date=date(2025, 3, 2), amount_base=20.0))
 
     result = await daily_spending(1, date(2025, 3, 1), date(2025, 3, 2))
     assert len(result) == 2

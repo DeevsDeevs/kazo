@@ -19,7 +19,7 @@ def _make_expense(**overrides) -> Expense:
         store="TestStore",
         amount=25.0,
         original_currency="EUR",
-        amount_eur=25.0,
+        amount_base=25.0,
         exchange_rate=1.0,
         category="groceries",
         items_json=None,
@@ -52,11 +52,11 @@ async def test_update_expense_category():
 
 async def test_update_expense_amount():
     exp_id = await save_expense(_make_expense())
-    updated = await update_expense(exp_id, amount=50.0, amount_eur=50.0)
+    updated = await update_expense(exp_id, amount=50.0, amount_base=50.0)
     assert updated is True
     result = await get_expense_by_id(exp_id)
     assert result["amount"] == 50.0
-    assert result["amount_eur"] == 50.0
+    assert result["amount_base"] == 50.0
 
 
 async def test_update_expense_no_fields():
@@ -86,8 +86,8 @@ async def test_get_bot_message_not_found():
 
 
 async def test_get_last_expense():
-    await save_expense(_make_expense(amount=10.0, amount_eur=10.0))
-    await save_expense(_make_expense(amount=20.0, amount_eur=20.0))
+    await save_expense(_make_expense(amount=10.0, amount_base=10.0))
+    await save_expense(_make_expense(amount=20.0, amount_base=20.0))
     result = await get_last_expense(chat_id=1)
     assert result is not None
     assert result["amount"] == 20.0

@@ -13,7 +13,7 @@ async def _add_expense(chat_id, amount, category, expense_date, store="TestStore
     db = await get_db()
     await db.execute(
         """INSERT INTO expenses (chat_id, user_id, store, amount, original_currency,
-        amount_eur, exchange_rate, category, source, expense_date)
+        amount_base, exchange_rate, category, source, expense_date)
         VALUES (?, 1, ?, ?, 'EUR', ?, 1.0, ?, 'text', ?)""",
         (chat_id, store, amount, amount, category, expense_date),
     )
@@ -56,7 +56,7 @@ async def test_export_csv_content():
                 e.get("category", ""),
                 e.get("amount", ""),
                 e.get("original_currency", ""),
-                e.get("amount_eur", ""),
+                e.get("amount_base", ""),
                 e.get("source", ""),
             ]
         )

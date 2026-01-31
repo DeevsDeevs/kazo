@@ -192,7 +192,7 @@ async def _handle_receipt(message: Message, bot: Bot, image_path: str):
                 extra={"chat_id": message.chat.id, "handler": "receipt"},
             )
 
-    amount_eur, rate = await convert_to_base(total, currency, message.chat.id)
+    amount_base, rate = await convert_to_base(total, currency, message.chat.id)
 
     expense = Expense(
         id=None,
@@ -201,7 +201,7 @@ async def _handle_receipt(message: Message, bot: Bot, image_path: str):
         store=store,
         amount=total,
         original_currency=currency,
-        amount_eur=amount_eur,
+        amount_base=amount_base,
         exchange_rate=rate,
         category=category,
         items_json=json.dumps(items) if items else None,
@@ -221,7 +221,7 @@ async def _handle_receipt(message: Message, bot: Bot, image_path: str):
 
     display_text = (
         f"🧾 Receipt processed\n"
-        f"💰 {format_amount(amount_eur, base)}{currency_note}\n"
+        f"💰 {format_amount(amount_base, base)}{currency_note}\n"
         f"🏷 {category}\n"
         f"📅 {expense_date}" + (f"\n🏪 {store}" if store else "") + items_text
     )
@@ -325,7 +325,7 @@ async def _process_product_prices(message: Message, session: dict):
 
     _product_sessions.pop(session["bot_message_id"], None)
 
-    amount_eur, rate = await convert_to_base(total, currency, message.chat.id)
+    amount_base, rate = await convert_to_base(total, currency, message.chat.id)
 
     expense = Expense(
         id=None,
@@ -334,7 +334,7 @@ async def _process_product_prices(message: Message, session: dict):
         store=None,
         amount=total,
         original_currency=currency,
-        amount_eur=amount_eur,
+        amount_base=amount_base,
         exchange_rate=rate,
         category=session["category"],
         items_json=json.dumps(items) if items else None,
@@ -354,7 +354,7 @@ async def _process_product_prices(message: Message, session: dict):
 
     display_text = (
         f"📷 {session['description']}\n"
-        f"💰 {format_amount(amount_eur, base)}{currency_note}\n"
+        f"💰 {format_amount(amount_base, base)}{currency_note}\n"
         f"🏷 {session['category']}\n"
         f"📅 {date.today().isoformat()}" + items_text
     )

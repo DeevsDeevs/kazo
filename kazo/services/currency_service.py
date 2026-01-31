@@ -72,30 +72,24 @@ async def _get_cached_rate(from_currency: str, to_currency: str, allow_stale: bo
     db = await get_db()
     cache_key = f"{from_currency}:{to_currency}"
     cursor = await db.execute(
-        "SELECT rate_to_eur, fetched_at FROM exchange_rates WHERE currency = ?",
+        "SELECT rate_to_base, fetched_at FROM exchange_rates WHERE currency = ?",
         (cache_key,),
     )
     row = await cursor.fetchone()
-    if not row and to_currency == "EUR":
-        cursor = await db.execute(
-            "SELECT rate_to_eur, fetched_at FROM exchange_rates WHERE currency = ?",
-            (from_currency,),
-        )
-        row = await cursor.fetchone()
     if not row:
         return None
     fetched_at = datetime.fromisoformat(row["fetched_at"])
     age = datetime.now(UTC) - fetched_at.replace(tzinfo=UTC)
     if not allow_stale and age > timedelta(hours=settings.exchange_rate_cache_hours):
         return None
-    return row["rate_to_eur"]
+    return row["rate_to_base"]
 
 
 async def _cache_rate(from_currency: str, to_currency: str, rate: float) -> None:
     db = await get_db()
     cache_key = f"{from_currency}:{to_currency}"
     await db.execute(
-        "INSERT OR REPLACE INTO exchange_rates (currency, rate_to_eur, fetched_at) VALUES (?, ?, ?)",
+        "INSERT OR REPLACE INTO exchange_rates (currency, rate_to_base, fetched_at) VALUES (?, ?, ?)",
         (cache_key, rate, datetime.now(UTC).isoformat()),
     )
     await db.commit()

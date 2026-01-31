@@ -9,7 +9,7 @@ async def save_expense(expense: Expense) -> int:
     db = await get_db()
     cursor = await db.execute(
         """INSERT INTO expenses
-        (chat_id, user_id, store, amount, original_currency, amount_eur,
+        (chat_id, user_id, store, amount, original_currency, amount_base,
          exchange_rate, category, items_json, source, expense_date, note)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
@@ -18,7 +18,7 @@ async def save_expense(expense: Expense) -> int:
             expense.store,
             expense.amount,
             expense.original_currency,
-            expense.amount_eur,
+            expense.amount_base,
             expense.exchange_rate,
             expense.category,
             expense.items_json,
@@ -69,10 +69,9 @@ async def update_expense(expense_id: int, **fields) -> bool:
         "store",
         "amount",
         "original_currency",
-        "amount_eur",
+        "amount_base",
         "exchange_rate",
         "category",
-        "description",
         "expense_date",
         "note",
     }
@@ -144,13 +143,13 @@ async def _save_items_from_json(db, expense_id: int, items_json: str, currency: 
         if not isinstance(item, dict):
             continue
         name = item.get("name") or item.get("item")
-        price = item.get("price")
-        if price is None:
-            price = item.get("amount")
-        if not name or price is None:
+        if not name:
             continue
+        raw_price = item.get("price")
+        if raw_price is None:
+            raw_price = item.get("amount")
         try:
-            price = float(price)
+            price = float(raw_price) if raw_price is not None else None
             quantity = float(item.get("quantity", 1))
         except (ValueError, TypeError):
             continue
@@ -167,8 +166,9 @@ async def save_expense_items(expense_id: int, items: list[dict], currency: str):
     await db.execute("DELETE FROM expense_items WHERE expense_id = ?", (expense_id,))
     for item in items:
         name = item.get("name") or item.get("item", "")
+        raw_price = item.get("price")
         try:
-            price = float(item.get("price", 0))
+            price = float(raw_price) if raw_price is not None else None
             quantity = float(item.get("quantity", 1))
         except (ValueError, TypeError):
             continue
@@ -208,30 +208,19 @@ async def search_items_by_name(name: str, chat_id: int | None = None) -> list[di
     return [dict(row) for row in rows]
 
 
-async def detect_recurring(chat_id: int, store: str, amount_eur: float) -> bool:
+async def detect_recurring(chat_id: int, store: str, amount_base: float) -> bool:
     """Check if same store + similar amount (±20%) appeared 2+ times in last 3 months."""
     if not store:
         return False
     db = await get_db()
     three_months_ago = (date.today() - timedelta(days=90)).isoformat()
-    low = amount_eur * 0.8
-    high = amount_eur * 1.2
+    low = amount_base * 0.8
+    high = amount_base * 1.2
     cursor = await db.execute(
         """SELECT COUNT(*) FROM expenses
-           WHERE chat_id = ? AND store = ? AND amount_eur BETWEEN ? AND ?
+           WHERE chat_id = ? AND store = ? AND amount_base BETWEEN ? AND ?
            AND expense_date >= ?""",
         (chat_id, store, low, high, three_months_ago),
     )
     row = await cursor.fetchone()
     return row[0] >= 2
-
-
-async def migrate_items_json():
-    db = await get_db()
-    cursor = await db.execute("SELECT id, items_json, original_currency FROM expenses WHERE items_json IS NOT NULL")
-    rows = await cursor.fetchall()
-    for row in rows:
-        existing = await db.execute("SELECT 1 FROM expense_items WHERE expense_id = ? LIMIT 1", (row[0],))
-        if await existing.fetchone():
-            continue
-        await _save_items_from_json(db, row[0], row[1], row[2])

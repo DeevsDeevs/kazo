@@ -224,12 +224,12 @@ async def cmd_search(message: Message) -> None:
         cat = e.get("category") or ""
         desc = f"{store} — {cat}" if store and cat else store or cat or "—"
         note = f" — 📝 {e['note']}" if e.get("note") else ""
-        lines.append(f"• {e['expense_date']}: {format_amount(e['amount_eur'], base)} ({desc}){note}")
+        lines.append(f"• {e['expense_date']}: {format_amount(e['amount_base'], base)} ({desc}){note}")
 
     if len(results) > 10:
         lines.append(f"\n... and {len(results) - 10} more")
 
-    total = sum(e["amount_eur"] for e in results)
+    total = sum(e["amount_base"] for e in results)
     lines.append(f"\nTotal: {format_amount(total, base)}")
 
     await message.answer("\n".join(lines))
