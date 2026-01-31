@@ -11,6 +11,7 @@ from kazo.categories import get_categories, get_categories_str
 from kazo.claude.client import ask_claude_structured
 from kazo.db.models import Expense
 from kazo.services.currency_service import convert_to_eur
+from kazo.handlers.pending import store_pending
 from kazo.services.expense_service import save_expense, delete_last_expense
 
 logger = logging.getLogger(__name__)
@@ -136,17 +137,17 @@ async def handle_text_expense(message: Message):
         expense_date=expense_date,
     )
 
-    await save_expense(expense)
-
     all_categories = await get_categories(message.chat.id)
     is_new_category = category not in all_categories
     cat_note = " (new category)" if is_new_category else ""
     currency_note = f" ({amount} {currency})" if currency != "EUR" else ""
 
-    await message.answer(
+    display_text = (
         f"✅ {parsed.get('description', 'Expense recorded')}\n"
         f"💰 €{amount_eur:.2f}{currency_note}\n"
         f"🏷 {category}{cat_note}\n"
         f"📅 {expense_date}"
         + (f"\n🏪 {store}" if store else "")
     )
+
+    await store_pending(message, expense, display_text)

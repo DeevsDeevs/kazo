@@ -5,7 +5,7 @@ from aiogram.types import Message
 
 from kazo.config import settings
 from kazo.db.database import close_db, init_db
-from kazo.handlers import categories, common, currencies, receipts, subscriptions, summary
+from kazo.handlers import categories, common, currencies, pending, receipts, subscriptions, summary
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -26,6 +26,7 @@ async def main():
 
     dp.message.middleware(auth_middleware)
 
+    dp.include_router(pending.router)
     dp.include_router(receipts.router)
     dp.include_router(subscriptions.router)
     dp.include_router(summary.router)

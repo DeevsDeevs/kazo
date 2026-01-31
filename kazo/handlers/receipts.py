@@ -11,6 +11,7 @@ from kazo.categories import get_categories_str
 from kazo.claude.client import ask_claude_structured
 from kazo.db.models import Expense
 from kazo.services.currency_service import convert_to_eur
+from kazo.handlers.pending import store_pending
 from kazo.services.expense_service import save_expense
 
 logger = logging.getLogger(__name__)
@@ -132,8 +133,6 @@ async def _parse_and_save_receipt(message: Message, bot: Bot, file_id: str, suff
         expense_date=expense_date,
     )
 
-    await save_expense(expense)
-
     items_text = ""
     if items:
         items_lines = [f"  • {i['name']}: {i['price']:.2f}" for i in items[:10]]
@@ -141,7 +140,7 @@ async def _parse_and_save_receipt(message: Message, bot: Bot, file_id: str, suff
 
     currency_note = f" ({total} {currency})" if currency != "EUR" else ""
 
-    await message.answer(
+    display_text = (
         f"🧾 Receipt processed\n"
         f"💰 €{amount_eur:.2f}{currency_note}\n"
         f"🏷 {category}\n"
@@ -149,6 +148,8 @@ async def _parse_and_save_receipt(message: Message, bot: Bot, file_id: str, suff
         + (f"\n🏪 {store}" if store else "")
         + items_text
     )
+
+    await store_pending(message, expense, display_text)
 
 
 @router.message(F.photo)

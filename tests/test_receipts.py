@@ -34,11 +34,11 @@ MOCK_PARSED = {
 }
 
 
-@patch("kazo.handlers.receipts.save_expense", new_callable=AsyncMock)
+@patch("kazo.handlers.receipts.store_pending", new_callable=AsyncMock)
 @patch("kazo.handlers.receipts.convert_to_eur", new_callable=AsyncMock, return_value=(2.50, 1.0))
 @patch("kazo.handlers.receipts.ask_claude_structured", new_callable=AsyncMock, return_value=MOCK_PARSED)
 @patch("kazo.handlers.receipts.get_categories_str", new_callable=AsyncMock, return_value="groceries, dining")
-async def test_photo_handler(mock_cats, mock_claude, mock_convert, mock_save):
+async def test_photo_handler(mock_cats, mock_claude, mock_convert, mock_pending):
     msg = _make_message()
     bot = _make_bot()
     photo = MagicMock()
@@ -48,15 +48,14 @@ async def test_photo_handler(mock_cats, mock_claude, mock_convert, mock_save):
     await handle_receipt_photo(msg, bot)
 
     mock_claude.assert_called_once()
-    mock_save.assert_called_once()
-    assert msg.answer.call_count == 2  # "Processing..." + result
+    mock_pending.assert_called_once()
 
 
-@patch("kazo.handlers.receipts.save_expense", new_callable=AsyncMock)
+@patch("kazo.handlers.receipts.store_pending", new_callable=AsyncMock)
 @patch("kazo.handlers.receipts.convert_to_eur", new_callable=AsyncMock, return_value=(10.0, 1.0))
 @patch("kazo.handlers.receipts.ask_claude_structured", new_callable=AsyncMock, return_value={**MOCK_PARSED, "total": 10.0})
 @patch("kazo.handlers.receipts.get_categories_str", new_callable=AsyncMock, return_value="groceries")
-async def test_document_handler_pdf(mock_cats, mock_claude, mock_convert, mock_save):
+async def test_document_handler_pdf(mock_cats, mock_claude, mock_convert, mock_pending):
     msg = _make_message()
     bot = _make_bot()
     doc = MagicMock()
@@ -67,7 +66,7 @@ async def test_document_handler_pdf(mock_cats, mock_claude, mock_convert, mock_s
     await handle_receipt_document(msg, bot)
 
     mock_claude.assert_called_once()
-    mock_save.assert_called_once()
+    mock_pending.assert_called_once()
 
 
 async def test_document_handler_unsupported_mime():
