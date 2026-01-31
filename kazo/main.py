@@ -42,9 +42,14 @@ def record_rate_limit(chat_id: int) -> None:
     _rate_limit_windows[chat_id].append(time.monotonic())
 
 
-async def auth_middleware(handler, event: Message, data: dict):
-    if settings.allowed_chat_ids and event.chat.id not in settings.allowed_chat_ids:
-        logger.warning("Unauthorized access", extra={"chat_id": event.chat.id})
+async def auth_middleware(handler, event, data: dict):
+    chat_id = None
+    if hasattr(event, "chat") and event.chat:
+        chat_id = event.chat.id
+    elif hasattr(event, "message") and event.message and event.message.chat:
+        chat_id = event.message.chat.id
+    if settings.allowed_chat_ids and chat_id not in settings.allowed_chat_ids:
+        logger.warning("Unauthorized access", extra={"chat_id": chat_id})
         return
     return await handler(event, data)
 
@@ -91,7 +96,8 @@ async def _health_check(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
     healthy = checks["db"] == "ok"
     body = json.dumps({"status": "healthy" if healthy else "unhealthy", "checks": checks})
     status = "200 OK" if healthy else "503 Service Unavailable"
-    response = f"HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {len(body)}\r\n\r\n{body}"
+    body_bytes = body.encode()
+    response = f"HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {len(body_bytes)}\r\n\r\n{body}"
     writer.write(response.encode())
     await writer.drain()
     writer.close()
@@ -107,6 +113,7 @@ async def main():
     dp.message.outer_middleware(error_boundary_middleware)
     dp.callback_query.outer_middleware(error_boundary_middleware)
     dp.message.middleware(auth_middleware)
+    dp.callback_query.middleware(auth_middleware)
 
     dp.include_router(pending.router)
     dp.include_router(receipts.router)

@@ -248,7 +248,7 @@ async def _handle_query(message: Message):
 
     data_text = "\n".join(summary_lines)
     by_cat = await spending_by_category(message.chat.id, start, today)
-    cat_text = ", ".join(f"{c}: {a:.2f}" for c, a in by_cat) if by_cat else "none"
+    cat_text = ", ".join(f"{c['category']}: {c['total']:.2f}" for c in by_cat) if by_cat else "none"
 
     answer = await ask_claude(
         prompt=(
@@ -429,10 +429,7 @@ async def handle_text_expense(message: Message):
         f"✅ {parsed.get('description', 'Expense recorded')}\n"
         f"💰 {format_amount(amount_eur, base)}{currency_note}\n"
         f"🏷 {category}{cat_note}\n"
-        f"📅 {expense_date}"
-        + (f"\n🏪 {store}" if store else "")
-        + (f"\n📝 {note}" if note else "")
-        + items_text
+        f"📅 {expense_date}" + (f"\n🏪 {store}" if store else "") + (f"\n📝 {note}" if note else "") + items_text
     )
 
     await store_pending(message, expense, display_text)

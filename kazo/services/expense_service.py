@@ -167,8 +167,11 @@ async def save_expense_items(expense_id: int, items: list[dict], currency: str):
     await db.execute("DELETE FROM expense_items WHERE expense_id = ?", (expense_id,))
     for item in items:
         name = item.get("name") or item.get("item", "")
-        price = float(item.get("price", 0))
-        quantity = float(item.get("quantity", 1))
+        try:
+            price = float(item.get("price", 0))
+            quantity = float(item.get("quantity", 1))
+        except (ValueError, TypeError):
+            continue
         item_currency = item.get("currency", currency)
         await db.execute(
             "INSERT INTO expense_items (expense_id, name, price, currency, quantity) VALUES (?, ?, ?, ?, ?)",

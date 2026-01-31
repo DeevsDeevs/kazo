@@ -323,7 +323,7 @@ async def _process_product_prices(message: Message, session: dict):
         await message.answer("Couldn't determine a valid total. Please try again.")
         return
 
-    del _product_sessions[session["bot_message_id"]]
+    _product_sessions.pop(session["bot_message_id"], None)
 
     amount_eur, rate = await convert_to_base(total, currency, message.chat.id)
 

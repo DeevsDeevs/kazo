@@ -52,8 +52,10 @@ async def cmd_price(message: Message):
     for r in results[:10]:
         store = r.get("store") or "?"
         date = r.get("expense_date", "?")
-        price = r["price"]
+        price = r.get("price")
         qty = r.get("quantity", 1)
+        if price is None:
+            continue
         line = f"  {date} — {price:.2f} {currency}"
         if qty != 1:
             line += f" x{qty:.0f}"
@@ -102,9 +104,10 @@ async def cmd_items(message: Message):
     lines = ["📋 Recent items" + (f" ({args})" if args else "") + ":"]
     for r in rows:
         r = dict(r)
-        lines.append(
-            f"  {r['name']} — {r['price']:.2f} {r['currency']} @ {r.get('store') or '?'} ({r['expense_date']})"
-        )
+        price = r.get("price")
+        if price is None:
+            continue
+        lines.append(f"  {r['name']} — {price:.2f} {r['currency']} @ {r.get('store') or '?'} ({r['expense_date']})")
 
     await message.reply("\n".join(lines))
 
@@ -125,6 +128,8 @@ async def cmd_compare(message: Message):
     stores: dict[str, list[float]] = {}
     for r in results:
         store = r.get("store") or "Unknown"
+        if r.get("price") is None:
+            continue
         stores.setdefault(store, []).append(r["price"])
 
     sorted_stores = sorted(stores.items(), key=lambda x: sum(x[1]) / len(x[1]))
