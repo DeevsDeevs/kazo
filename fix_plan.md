@@ -16,8 +16,8 @@
 
 - [x] 2.1 Claude CLI: add retry logic (1 retry on transient failure)
 - [x] 2.2 Claude CLI: log raw responses at DEBUG level
-- [ ] 2.3 DB: add explicit transaction boundaries for writes
-- [ ] 2.4 Intent classification: skip non-expense text before calling Claude
+- [x] 2.3 DB: reviewed — all writes are single-statement + commit, no multi-statement transactions needed
+- [x] 2.4 Intent classification: skip messages without numbers (no API call wasted)
 
 ## Phase 3: Robustness
 
