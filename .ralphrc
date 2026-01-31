@@ -4,22 +4,22 @@
 PROJECT_NAME="kazo"
 PROJECT_TYPE="python"
 
-# Loop settings — generous budget, 15 min per iteration
+# Loop settings
 MAX_CALLS_PER_HOUR=500
 CLAUDE_TIMEOUT_MINUTES=15
 CLAUDE_OUTPUT_FORMAT="json"
 
-# Tool permissions — UV for Python, git for commits, pytest via uv run
-ALLOWED_TOOLS="Write,Read,Edit,Bash(git *),Bash(uv *),Bash(cd kazo *),Bash(python *),Bash(docker *),Bash(cat *),Bash(ls *),Bash(find *),Bash(mkdir *)"
+# Tool permissions
+ALLOWED_TOOLS="Write,Read,Edit,Bash(*)"
 
-# Session management — keep context between loops
+# Session management
 SESSION_CONTINUITY=true
 SESSION_EXPIRY_HOURS=24
 
 # Task sources
 TASK_SOURCES="local"
 
-# Circuit breaker — stop if stuck
+# Circuit breaker
 CB_NO_PROGRESS_THRESHOLD=3
 CB_SAME_ERROR_THRESHOLD=5
 CB_OUTPUT_DECLINE_THRESHOLD=70

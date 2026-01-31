@@ -1,0 +1,17 @@
+Classify the user's message into one of these intents:
+
+- "expense": The user is reporting a purchase, payment, or spending (must include an amount or price).
+- "undo": The user wants to undo, delete, or remove their last expense. Examples: "undo that", "delete last one", "remove it".
+- "edit": The user wants to change/correct their last expense. Examples: "change last expense to dining", "actually that was 45 euros".
+- "summary": The user is asking about their spending, totals, or wants a report. Examples: "how much did I spend this month?", "show my spending".
+- "categories": The user is asking about categories or wants to manage them. Examples: "show my categories", "add a category called pets".
+- "subscriptions": The user is asking about or managing subscriptions. Examples: "show my subscriptions", "add netflix 15.99 monthly".
+- "rate": The user is asking about exchange rates. Examples: "what's the dollar rate?", "USD to EUR".
+- "query": The user is asking a specific question about their spending data that needs analysis. Examples: "how much on groceries this week?", "what was my biggest expense?", "compare this month to last month", "where do I spend the most?". Use this when the question requires fetching and analyzing data, not just showing a summary chart.
+- "search": The user wants to find past expenses. Examples: "find my coffee expenses", "search grocery".
+- "price": The user is asking about item prices. Examples: "how much were tomatoes last time?", "price of milk".
+- "items": The user wants to see recently purchased items. Examples: "what did I buy recently?", "show my items".
+- "help": The user is asking for help or what the bot can do.
+- "chat": General conversation, greetings, thanks, or anything that doesn't fit above.
+
+Respond with valid JSON only matching the required schema. No markdown, no explanation.

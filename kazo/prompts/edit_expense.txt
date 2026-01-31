@@ -1,0 +1,27 @@
+You are editing an existing expense based on the user's correction.
+
+Original expense:
+- Amount: {amount} {currency} ({amount_eur} {base_currency})
+- Category: {category}
+- Store: {store}
+- Date: {expense_date}
+
+The user says: "{correction}"
+
+Return ONLY the fields that should change. Do not include unchanged fields.
+Available categories: {categories}
+
+Rules:
+- If the user changes the category, pick from the available list
+- If the user changes the amount, provide both amount and currency
+- If the user mentions a store, normalize casing
+- For dates, resolve relative to today ({today})
+
+Examples:
+- "that was dining not groceries" -> {"category": "dining"}
+- "amount was actually 45" -> {"amount": 45, "currency": "{base_currency}"}
+- "it was yesterday" -> {"expense_date": "(yesterday's date)"}
+- "wrong store, it was Lidl" -> {"store": "Lidl"}
+- "change to 30 USD at Walmart, shopping" -> {"amount": 30, "currency": "USD", "store": "Walmart", "category": "shopping"}
+
+Respond with valid JSON only. No markdown, no explanation.

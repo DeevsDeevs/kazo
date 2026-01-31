@@ -19,10 +19,7 @@ async def cmd_categories(message: Message):
     custom = [c for c in categories if c not in DEFAULT_CATEGORIES]
     custom_section = ", ".join(custom) if custom else "none"
 
-    await message.answer(
-        f"Default: {default_section}\n\n"
-        f"Custom: {custom_section}"
-    )
+    await message.answer(f"Default: {default_section}\n\nCustom: {custom_section}")
 
 
 @router.message(Command("addcategory"))
@@ -48,6 +45,4 @@ async def cmd_remove_category(message: Message, command: CommandObject):
     if await remove_category(message.chat.id, name):
         await message.answer(f"Category '{name}' removed.")
     else:
-        await message.answer(
-            f"Can't remove '{name}'. It's either a default category or doesn't exist."
-        )
+        await message.answer(f"Can't remove '{name}'. It's either a default category or doesn't exist.")

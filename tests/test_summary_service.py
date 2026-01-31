@@ -2,14 +2,22 @@ from datetime import date
 
 from kazo.db.models import Expense
 from kazo.services.expense_service import save_expense
-from kazo.services.summary_service import spending_by_category, daily_spending
+from kazo.services.summary_service import daily_spending, spending_by_category
 
 
 def _exp(**kw) -> Expense:
     defaults = dict(
-        id=None, chat_id=1, user_id=1, store=None, amount=10.0,
-        original_currency="EUR", amount_eur=10.0, exchange_rate=1.0,
-        category="groceries", items_json=None, source="text",
+        id=None,
+        chat_id=1,
+        user_id=1,
+        store=None,
+        amount=10.0,
+        original_currency="EUR",
+        amount_eur=10.0,
+        exchange_rate=1.0,
+        category="groceries",
+        items_json=None,
+        source="text",
         expense_date=date(2025, 3, 1),
     )
     defaults.update(kw)

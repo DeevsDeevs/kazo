@@ -1,0 +1,6 @@
+Classify this image as one of:
+- "receipt": A receipt, invoice, bill, or similar document with store name, line items, and/or a total amount.
+- "product": A photo of products, groceries, items on a table, shopping bags, fridge contents, or similar.
+- "other": Neither a receipt nor identifiable products.
+
+Respond with valid JSON only matching the required schema. No markdown, no explanation.

@@ -1,7 +1,7 @@
 {
   "session_id": "",
   "created_at": "",
-  "last_used": "",
-  "reset_at": "2026-01-31T01:46:17+00:00",
-  "reset_reason": "project_complete"
+  "last_used": "2026-01-31T13:21:27+00:00",
+  "reset_at": "2026-01-31T02:20:22+00:00",
+  "reset_reason": "manual_interrupt"
 }

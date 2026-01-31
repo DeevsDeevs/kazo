@@ -2,52 +2,46 @@
 
 ## Prerequisites
 - UV (Python package manager): `curl -LsSf https://astral.sh/uv/install.sh | sh`
-- Node.js 22+ (for Claude Code CLI)
-- Claude Code CLI: `npm install -g @anthropic-ai/claude-code`
-- Environment: `ANTHROPIC_API_KEY` must be set
+- Claude Code CLI: `npm install -g @anthropic-ai/claude-code` (for CLI backend)
+- Optional: `ANTHROPIC_API_KEY` in `.env` (enables faster SDK backend)
 
 ## Install Dependencies
 
 ```bash
-cd kazo && uv sync
+uv sync
 ```
 
 ## Run Tests
 
 ```bash
-cd kazo && uv run python -m pytest tests/ -v
-```
-
-## Verify Imports (quick smoke test)
-
-```bash
-cd kazo && TELEGRAM_BOT_TOKEN=test uv run python -c "from kazo.main import main; print('OK')"
+uv run pytest -v
 ```
 
 ## Run Bot
 
 ```bash
-cd kazo && uv run python -m kazo
+uv run python -m kazo
 ```
 
 ## Docker
 
 ```bash
-cd kazo && docker compose up --build
+docker compose up --build
 ```
 
 ## Environment Variables
-Copy `kazo/.env.example` → `kazo/.env`:
+Copy `.env.example` → `.env`:
 - `TELEGRAM_BOT_TOKEN` (required)
 - `ALLOWED_CHAT_IDS` — comma-separated chat IDs (optional, empty = allow all)
+- `ANTHROPIC_API_KEY` — optional, enables SDK backend for faster responses (~1-2s vs ~10s)
 - `DB_PATH` — SQLite file path (default: `kazo.db`)
 - `CLAUDE_MODEL` — model name (default: `sonnet`)
 - `CLAUDE_TIMEOUT` — seconds (default: `60`)
-- `FRANKFURTER_URL` — exchange rate API (default: `https://api.frankfurter.dev/v1/latest`)
+- `FRANKFURTER_URL` — exchange rate API
 - `EXCHANGE_RATE_CACHE_HOURS` — cache TTL (default: `24`)
 
 ## Project Layout
-- Source: `kazo/kazo/`
-- Tests: `kazo/tests/`
-- Config: `kazo/pyproject.toml`
-- Docker: `kazo/Dockerfile`, `kazo/docker-compose.yml`
+- Source: `kazo/`
+- Tests: `tests/`
+- Config: `pyproject.toml`
+- Docker: `Dockerfile`, `docker-compose.yml`

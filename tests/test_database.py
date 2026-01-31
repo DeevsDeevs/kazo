@@ -2,9 +2,7 @@ import aiosqlite
 
 
 async def test_schema_creates_tables(test_db: aiosqlite.Connection):
-    cursor = await test_db.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
-    )
+    cursor = await test_db.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
     tables = [row[0] for row in await cursor.fetchall()]
     assert "expenses" in tables
     assert "subscriptions" in tables
@@ -14,6 +12,7 @@ async def test_schema_creates_tables(test_db: aiosqlite.Connection):
 
 async def test_expense_check_constraint(test_db: aiosqlite.Connection):
     import sqlite3
+
     import pytest
 
     with pytest.raises(sqlite3.IntegrityError):
@@ -26,6 +25,7 @@ async def test_expense_check_constraint(test_db: aiosqlite.Connection):
 
 async def test_subscription_frequency_check(test_db: aiosqlite.Connection):
     import sqlite3
+
     import pytest
 
     with pytest.raises(sqlite3.IntegrityError):

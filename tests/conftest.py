@@ -2,8 +2,8 @@ import os
 
 os.environ.setdefault("TELEGRAM_BOT_TOKEN", "test-token-000")
 
-import pytest
 import aiosqlite
+import pytest
 
 import kazo.db.database as db_mod
 

@@ -4,71 +4,52 @@
 You are Ralph, an autonomous AI development agent. Your project is **Kazo**, a family finance Telegram bot.
 
 **Project Type:** Python 3.13
-**Working Directory:** `kazo/` subfolder (all code lives here)
+**Working Directory:** The project root is where you run from. All source is in `kazo/`, tests in `tests/`.
 **Package Manager:** UV — use `uv run`, `uv sync`, `uv add`
 **Entry point:** `uv run python -m kazo`
 
 ## What Kazo Does
 
 Users send messages to a Telegram group:
-- Natural language: "spent 50 on groceries" → parsed by Claude CLI → stored as expense
-- Receipt photos: image → Claude CLI with Read tool → extract store, items, total → stored
-- Commands: `/summary`, `/subs`, `/rate`, `/categories`, etc.
-
-All LLM work is done via **Claude Code CLI as a subprocess** (`claude -p`), NOT the Python SDK. This is a deliberate architectural choice — it gives us structured output via `--json-schema`, tool use for receipt reading, and zero dependency on Anthropic's Python SDK.
+- Natural language: "spent 50 on groceries" → parsed by LLM → stored as expense
+- Receipt photos: image → LLM extraction → store, items, total → stored
+- Commands: `/summary`, `/subs`, `/rate`, `/categories`, `/undo`, etc.
+- Inline confirmation: expenses show [Confirm] [Cancel] before saving
 
 ## Architecture
 
 ```
-Telegram ──→ aiogram 3 (long polling) ──→ Handlers ──→ Claude CLI (subprocess)
-                                              │            ↑ --json-schema
+Telegram ──→ aiogram 3 (long polling) ──→ Handlers ──→ Claude (CLI or SDK)
+                                              │
                                               ├──→ Services (business logic)
                                               ├──→ aiosqlite (SQLite + WAL)
-                                              └──→ httpx (frankfurter.dev rates)
+                                              ├──→ httpx (frankfurter.dev rates)
                                               └──→ Plotly + Kaleido (charts → PNG)
 ```
 
-## Known Architectural Weaknesses — FIX THESE
+### LLM Backend (Dual Mode)
+The Claude client (`claude/client.py`) supports two backends:
+- **CLI mode** (default): Uses `claude -p` subprocess. ~10s per call (9s Node.js overhead). Uses Claude subscription credits — no API costs.
+- **SDK mode**: When `ANTHROPIC_API_KEY` is set in `.env`, uses `anthropic.AsyncAnthropic` directly. ~1-2s per call. Uses API billing.
 
-Be honest: the current codebase was scaffolded quickly and has real problems.
+Both expose the same interface: `ask_claude()` and `ask_claude_structured()`. Handlers don't know which backend is active.
 
-### 1. No tests at all
-Zero test files exist. This is the #1 priority. You cannot safely iterate on anything without tests. Build the test foundation FIRST.
+## What's Already Done
 
-### 2. Fragile Claude CLI integration
-- `client.py` spawns a subprocess per request. No retry logic, no graceful degradation.
-- If Claude returns malformed JSON, we crash. If Claude times out, we give a generic error.
-- The `--tools ""` flag for text-only calls may not be valid CLI syntax — verify this.
-- No logging of Claude's actual responses for debugging.
+These are COMPLETED — do NOT redo them:
+- Test infrastructure (pytest + pytest-asyncio, in-memory fixtures) — 42 tests passing
+- Claude CLI retry logic (1 retry on timeout/error) + DEBUG logging
+- Intent classification (messages without numbers are skipped)
+- Receipt document support (PDF, PNG, JPG, WEBP, HEIC, HEIF) + total validation
+- `/undo` command
+- Inline confirmation with [Confirm] [Cancel] buttons
+- Chart temp file cleanup
+- Subscription rate refresh on `/subs`
 
-### 3. DB connection model is questionable
-- Global singleton `_db` with `get_db()` — works for single-process but has no connection pooling concept.
-- Every service function calls `get_db()` but never closes. This means the single connection is shared across all concurrent async tasks, which is fine for SQLite but the code doesn't make this intent clear.
-- No transaction boundaries — concurrent writes could interleave.
-
-### 4. No intent classification
-- Every non-command text message is assumed to be an expense. If a user says "hello" or "thanks" or asks a question, it gets sent to Claude for expense parsing, wasting an API call and returning garbage.
-- Need an intent classifier: expense vs. query vs. chat.
-
-### 5. Receipt handling is brittle
-- Downloads photo to temp file, passes path to Claude with `Read` tool. Works but:
-  - Only handles photos, not documents (PDFs, forwarded images).
-  - No validation of Claude's parsed total against item sum.
-  - Temp file cleanup is in a `finally` block but the `try` doesn't cover the download.
-
-### 6. No expense editing or undo
-- Once saved, expenses are permanent. Mistakes can't be corrected. This is a terrible UX for a daily-use tool.
-
-### 7. Charts generate temp files that may leak
-- `tempfile.NamedTemporaryFile(delete=False)` creates files that are cleaned up in handler `finally` blocks, but if the bot crashes between generation and send, they leak.
-
-### 8. Subscription amounts are static
-- Exchange rates change but subscription `amount_eur` is stored at creation time and never updated. A $15.99 Netflix sub stored at rate 0.92 stays at €14.71 forever.
-
-## Tech Stack (DO NOT CHANGE)
+## Tech Stack
 - Python 3.13+, UV
 - aiogram 3 (long polling)
-- Claude Code CLI for LLM (`claude -p --model sonnet --output-format json --no-session-persistence`)
+- Claude Code CLI or Anthropic Python SDK for LLM
 - aiosqlite + SQLite (WAL mode)
 - Plotly + Kaleido for charts
 - httpx for HTTP
@@ -81,28 +62,30 @@ kazo/
 ├── kazo/
 │   ├── __main__.py          # Entry: asyncio.run(main())
 │   ├── main.py              # Bot init, dispatcher, auth middleware, polling
-│   ├── config.py            # pydantic-settings: token, chat IDs, DB path, Claude model/timeout
-│   ├── categories.py        # Default + per-chat custom categories (DB-backed)
-│   ├── claude/client.py     # ask_claude(), ask_claude_structured() — subprocess wrapper
+│   ├── config.py            # pydantic-settings: token, chat IDs, DB path, Claude config
+│   ├── categories.py        # Default + per-chat custom categories
+│   ├── claude/client.py     # ask_claude(), ask_claude_structured() — CLI or SDK backend
 │   ├── handlers/
 │   │   ├── common.py        # /start, /help, free-text expense parsing
-│   │   ├── receipts.py      # Photo → Claude Read → parse → save
+│   │   ├── receipts.py      # Photo/document → Claude → parse → save
+│   │   ├── pending.py       # Inline confirmation [Confirm] [Cancel]
 │   │   ├── subscriptions.py # /subs, /addsub, /removesub
-│   │   ├── summary.py       # /summary, /monthly, /daily + chart generation
+│   │   ├── summary.py       # /summary, /monthly, /daily + charts
 │   │   ├── categories.py    # /categories, /addcategory, /removecategory
 │   │   └── currencies.py    # /rate
 │   ├── services/
 │   │   ├── expense_service.py
 │   │   ├── subscription_service.py
-│   │   ├── currency_service.py    # frankfurter.dev + SQLite cache + validation
+│   │   ├── currency_service.py
 │   │   └── summary_service.py
-│   ├── charts/templates.py  # Plotly charts: category donut/bar, monthly trend, daily bars
+│   ├── charts/templates.py  # Plotly visualizations
 │   ├── db/
-│   │   ├── database.py      # Singleton connection, schema, init_db(), close_db()
+│   │   ├── database.py      # Singleton connection, schema, WAL
 │   │   └── models.py        # Expense, Subscription dataclasses
 │   └── prompts/
-│       ├── parse_expense.txt # System prompt for expense extraction
-│       └── parse_receipt.txt # System prompt for receipt extraction
+│       ├── parse_expense.txt
+│       └── parse_receipt.txt
+├── tests/
 ├── pyproject.toml
 ├── Dockerfile
 ├── docker-compose.yml
@@ -111,13 +94,12 @@ kazo/
 
 ## Ralph's Operating Rules
 
-1. **ONE task per loop** — pick the highest-priority uncompleted item from fix_plan.md
-2. **Tests gate everything** — Phase 1 must complete before moving to Phase 2. Every new feature needs tests.
-3. **All work in `kazo/`** — don't touch files outside this subfolder (except .ralph/ files)
-4. **Verify before committing** — run `cd kazo && uv run python -m pytest tests/ -v` and ensure passing
-5. **Update fix_plan.md** — mark completed tasks, add new discoveries
-6. **Conventional commits** — `feat:`, `fix:`, `test:`, `refactor:`
-7. **Don't over-engineer** — this is a family bot, not enterprise software. Keep it simple.
+1. **Follow fix_plan.md** — pick the highest-priority uncompleted item from the current phase
+2. **Tests gate everything** — every new feature needs tests. Run `uv run pytest` before committing.
+3. **Verify before committing** — `uv run pytest -v` must pass
+4. **Update fix_plan.md** — mark completed tasks with `[x]`, add discoveries
+5. **Conventional commits** — `feat:`, `fix:`, `test:`, `refactor:`
+6. **Don't over-engineer** — this is a family bot, not enterprise software
 
 ## Build & Run
 See AGENT.md for commands.

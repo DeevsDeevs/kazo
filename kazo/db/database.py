@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS expenses (
     items_json TEXT,
     source TEXT NOT NULL,
     expense_date DATE NOT NULL,
+    note TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -28,6 +29,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     amount_eur REAL NOT NULL CHECK(amount_eur > 0),
     frequency TEXT NOT NULL DEFAULT 'monthly' CHECK(frequency IN ('daily', 'weekly', 'monthly', 'yearly')),
     category TEXT,
+    billing_day INTEGER CHECK(billing_day IS NULL OR (billing_day >= 1 AND billing_day <= 31)),
     active BOOLEAN DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -45,9 +47,40 @@ CREATE TABLE IF NOT EXISTS custom_categories (
     UNIQUE(chat_id, name)
 );
 
+CREATE TABLE IF NOT EXISTS bot_message_expenses (
+    bot_message_id INTEGER NOT NULL,
+    chat_id INTEGER NOT NULL,
+    expense_id INTEGER NOT NULL REFERENCES expenses(id) ON DELETE CASCADE,
+    PRIMARY KEY (chat_id, bot_message_id)
+);
+
+CREATE TABLE IF NOT EXISTS expense_items (
+    id INTEGER PRIMARY KEY,
+    expense_id INTEGER NOT NULL REFERENCES expenses(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    price REAL NOT NULL,
+    currency TEXT NOT NULL,
+    quantity REAL NOT NULL DEFAULT 1
+);
+
 CREATE INDEX IF NOT EXISTS idx_expenses_chat_date ON expenses(chat_id, expense_date);
 CREATE INDEX IF NOT EXISTS idx_expenses_chat_created ON expenses(chat_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_chat_active ON subscriptions(chat_id, active);
+CREATE INDEX IF NOT EXISTS idx_expense_items_expense ON expense_items(expense_id);
+CREATE INDEX IF NOT EXISTS idx_expense_items_name ON expense_items(name);
+
+CREATE TABLE IF NOT EXISTS budgets (
+    id INTEGER PRIMARY KEY,
+    chat_id INTEGER NOT NULL,
+    category TEXT,
+    amount_eur REAL NOT NULL CHECK(amount_eur > 0),
+    UNIQUE(chat_id, category)
+);
+
+CREATE TABLE IF NOT EXISTS chat_settings (
+    chat_id INTEGER PRIMARY KEY,
+    base_currency TEXT NOT NULL DEFAULT 'EUR'
+);
 """
 
 _db: aiosqlite.Connection | None = None
@@ -74,3 +107,17 @@ async def init_db():
     db = await get_db()
     await db.executescript(SCHEMA)
     await db.commit()
+    # Migrations for existing databases
+    for migration in [
+        "ALTER TABLE expenses ADD COLUMN note TEXT",
+        "ALTER TABLE subscriptions ADD COLUMN billing_day INTEGER"
+        " CHECK(billing_day IS NULL OR (billing_day >= 1 AND billing_day <= 31))",
+    ]:
+        try:
+            await db.execute(migration)
+            await db.commit()
+        except Exception:
+            pass
+    from kazo.services.expense_service import migrate_items_json
+
+    await migrate_items_json()

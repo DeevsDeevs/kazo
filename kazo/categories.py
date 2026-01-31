@@ -1,5 +1,3 @@
-from sqlite3 import IntegrityError
-
 from kazo.db.database import get_db
 
 DEFAULT_CATEGORIES: list[str] = [

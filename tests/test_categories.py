@@ -1,5 +1,8 @@
 from kazo.categories import (
-    get_categories, add_category, remove_category, DEFAULT_CATEGORIES,
+    DEFAULT_CATEGORIES,
+    add_category,
+    get_categories,
+    remove_category,
 )
 
 

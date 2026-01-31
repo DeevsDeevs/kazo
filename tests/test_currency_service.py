@@ -1,8 +1,11 @@
 import pytest
 
 from kazo.services.currency_service import (
-    validate_currency, InvalidCurrencyError, convert_to_eur,
-    _cache_rate, _get_cached_rate,
+    InvalidCurrencyError,
+    _cache_rate,
+    _get_cached_rate,
+    get_rate,
+    validate_currency,
 )
 
 
@@ -22,17 +25,16 @@ def test_validate_bad_format():
 
 
 async def test_eur_identity():
-    amount_eur, rate = await convert_to_eur(100.0, "EUR")
-    assert amount_eur == 100.0
+    rate = await get_rate("EUR", "EUR")
     assert rate == 1.0
 
 
 async def test_cache_roundtrip():
-    await _cache_rate("USD", 0.92)
-    cached = await _get_cached_rate("USD")
+    await _cache_rate("USD", "EUR", 0.92)
+    cached = await _get_cached_rate("USD", "EUR")
     assert cached == 0.92
 
 
 async def test_cache_miss():
-    cached = await _get_cached_rate("GBP")
+    cached = await _get_cached_rate("GBP", "EUR")
     assert cached is None

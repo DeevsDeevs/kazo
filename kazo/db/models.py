@@ -16,7 +16,26 @@ class Expense:
     items_json: str | None
     source: str
     expense_date: date
+    note: str | None = None
     created_at: datetime | None = None
+
+
+@dataclass(slots=True)
+class ExpenseItem:
+    id: int | None
+    expense_id: int
+    name: str
+    price: float
+    currency: str
+    quantity: float = 1.0
+
+
+@dataclass(slots=True)
+class Budget:
+    id: int | None
+    chat_id: int
+    category: str | None
+    amount_eur: float
 
 
 @dataclass(slots=True)
@@ -29,5 +48,6 @@ class Subscription:
     amount_eur: float
     frequency: str = "monthly"
     category: str | None = None
+    billing_day: int | None = None
     active: bool = True
     created_at: datetime | None = None
