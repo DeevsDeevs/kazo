@@ -11,7 +11,7 @@ from kazo.categories import get_categories, get_categories_str
 from kazo.claude.client import ask_claude_structured
 from kazo.db.models import Expense
 from kazo.services.currency_service import convert_to_eur
-from kazo.services.expense_service import save_expense
+from kazo.services.expense_service import save_expense, delete_last_expense
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -51,13 +51,25 @@ async def cmd_start(message: Message):
         "/categories — list all categories\n"
         "/addcategory — add custom category\n"
         "/removecategory — remove custom category\n"
-        "/rate — check exchange rates"
+        "/rate — check exchange rates\n"
+        "/undo — remove last expense"
     )
 
 
 @router.message(Command("help"))
 async def cmd_help(message: Message):
     await cmd_start(message)
+
+
+@router.message(Command("undo"))
+async def cmd_undo(message: Message):
+    deleted = await delete_last_expense(message.chat.id)
+    if not deleted:
+        await message.answer("No expenses to undo.")
+        return
+    await message.answer(
+        f"Removed: €{deleted['amount_eur']:.2f} — {deleted['category']} ({deleted['expense_date']})"
+    )
 
 
 @router.message(F.text & ~F.text.startswith("/"))

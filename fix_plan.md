@@ -23,8 +23,8 @@
 
 - [x] 3.1 Receipt handler: fix temp file cleanup scope
 - [x] 3.2 Receipt handler: validate parsed total vs item sum (warning log on >10% mismatch)
-- [ ] 3.3 Add expense undo (last expense per chat)
-- [ ] 3.4 Chart temp file cleanup: use context manager pattern
+- [x] 3.3 Add expense undo (/undo command, delete_last_expense service)
+- [x] 3.4 Chart temp file cleanup: close fd before write_image
 
 ## Phase 4: Enhancements
 
