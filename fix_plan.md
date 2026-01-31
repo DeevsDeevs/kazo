@@ -21,8 +21,8 @@
 
 ## Phase 3: Robustness
 
-- [ ] 3.1 Receipt handler: fix temp file cleanup scope
-- [ ] 3.2 Receipt handler: validate parsed total vs item sum
+- [x] 3.1 Receipt handler: fix temp file cleanup scope
+- [x] 3.2 Receipt handler: validate parsed total vs item sum (warning log on >10% mismatch)
 - [ ] 3.3 Add expense undo (last expense per chat)
 - [ ] 3.4 Chart temp file cleanup: use context manager pattern
 
