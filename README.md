@@ -1,68 +1,98 @@
 # Kazo
 
-Family finance tracking through Telegram. Send a message, get a ledger entry. Photograph a receipt, get it parsed. Ask a question, get an answer with a chart.
+Family finance bot for Telegram. Text it an expense, photograph a receipt, snap a bag of groceries, ask how much you spent — it handles all of it.
 
-Built on aiogram 3, SQLite, and Claude Code CLI as the language model backbone.
+## What it does
 
-## Architecture
+**Track expenses** — send "lunch 12.50" or "coffee 4 usd" and it logs it. Supports any of 31 currencies with automatic conversion. Add notes inline: "dinner 45 note birthday celebration".
 
-```
-Telegram → aiogram 3 (long polling) → Handlers → Claude CLI (subprocess)
-                                          ├── Services (business logic)
-                                          ├── aiosqlite (SQLite + WAL)
-                                          ├── httpx (frankfurter.dev rates)
-                                          └── Plotly + Kaleido (charts → PNG)
-```
+**Scan receipts** — send a photo or PDF of a receipt. Kazo extracts the store, items, prices, and total. Works with any language — item names get translated to English automatically so price history stays consistent.
 
-All LLM calls go through Claude Code CLI as a subprocess — not the Python SDK. This gives structured JSON output via `--json-schema`, tool use for receipt reading, and zero SDK dependency.
+**Photograph products** — not a receipt, just a bag of groceries or items on a table. Kazo identifies the products and asks you for prices. You can give a total or per-item breakdown.
+
+**Edit anything** — reply to any expense confirmation to correct it ("that was dining not groceries", "amount was 45"). Or use `/edit` to fix the last one.
+
+**Inline confirmation** — every expense shows Confirm/Cancel buttons before saving. No accidental entries.
+
+**Budgets** — set monthly limits overall or per-category. Summaries show progress bars against your budget.
+
+**Track item prices** — receipt items are stored individually. Check price history, compare across stores, search by name.
+
+**Natural language** — ask "how much did I spend on groceries this month?" and get an answer. Say "undo that" instead of `/undo`. Say "show my subscriptions" instead of `/subs`. Everything works both ways.
 
 ## Commands
 
+### Tracking
 | Command | What it does |
 |---------|-------------|
-| `/start` | Bot intro |
-| `/help` | Command reference |
+| *any text with amount* | Log an expense ("coffee 4.50", "uber 23 usd") |
+| *photo/PDF* | Parse receipt or identify products |
 | `/undo` | Delete last expense |
-| `/summary` | This month by category + chart |
-| `/monthly` | 6-month trend + chart |
-| `/daily` | Last 30 days + chart |
-| `/subs` | List active subscriptions (refreshes rates) |
-| `/addsub Name Amount Currency [frequency]` | Add subscription |
-| `/removesub Name` | Deactivate subscription |
-| `/categories` | List all categories |
-| `/addcategory Name` | Add custom category |
-| `/removecategory Name` | Remove custom category |
-| `/rate [Currency]` | EUR exchange rate |
+| `/edit [id]` | Edit last expense (or by ID) |
+| `/note ID text` | Add note to an expense |
 
-**Free text**: Send any message with a number and Kazo parses it as an expense.
-**Photos/Documents**: Send a receipt image (JPG, PNG, WEBP, HEIC) or PDF and Kazo extracts the line items.
+### Reports
+| Command | What it does |
+|---------|-------------|
+| `/summary [week\|month\|Q1]` | Spending breakdown with chart |
+| `/monthly` | 6-month trend chart |
+| `/daily` | Last 30 days chart |
+| `/stats` | All-time stats, top categories/stores, biggest expense |
+| `/export [YYYY-MM]` | Download CSV |
+| `/backup` | Download SQLite database file |
+
+### Items & Prices
+| Command | What it does |
+|---------|-------------|
+| `/price tomatoes [store]` | Price history across receipts |
+| `/items [category]` | Recently purchased items |
+| `/compare tomatoes` | Price comparison across stores |
+| `/search coffee [date]` | Find expenses by keyword |
+
+### Subscriptions
+| Command | What it does |
+|---------|-------------|
+| `/subs` | List active subscriptions with current rates |
+| `/addsub Name Amount Currency [frequency] [billing_day]` | Add subscription |
+| `/removesub Name` | Deactivate subscription |
+
+### Settings
+| Command | What it does |
+|---------|-------------|
+| `/setcurrency USD` | Change base currency for this chat |
+| `/setbudget 2000` | Set monthly budget (or `/setbudget groceries 500`) |
+| `/categories` | List categories |
+| `/addcategory Name` | Add custom category |
+| `/removecategory Name` | Remove category |
+| `/rate [Currency]` | Exchange rate lookup |
+| `/settings` | View current configuration |
+| `/help` | Full command reference |
 
 ## Setup
 
 ### Prerequisites
 
 - Python 3.13+
-- [UV](https://docs.astral.sh/uv/) package manager
-- Claude Code CLI (`npx @anthropic-ai/claude-code`)
-- Telegram Bot Token (from [@BotFather](https://t.me/BotFather))
+- [UV](https://docs.astral.sh/uv/)
+- Telegram Bot Token from [@BotFather](https://t.me/BotFather)
+- Anthropic API key (for Claude)
 
-### Install
+### Install & Configure
 
 ```bash
 cd kazo
 uv sync
+cp .env.example .env
 ```
 
-### Configure
-
-Copy `.env.example` to `.env` and fill in:
+Fill in `.env`:
 
 ```bash
-TELEGRAM_BOT_TOKEN=your-token-here
-ALLOWED_CHAT_IDS=123456789,987654321   # optional, restricts access
-DB_PATH=kazo.db                         # default
-CLAUDE_MODEL=sonnet                     # default
-CLAUDE_TIMEOUT=60                       # seconds, default
+TELEGRAM_BOT_TOKEN=your-token
+ANTHROPIC_API_KEY=your-key
+ALLOWED_CHAT_IDS=123456789           # comma-separated, optional
+BASE_CURRENCY=EUR                     # default
+CLAUDE_MODEL=haiku                    # haiku, sonnet, or opus
 ```
 
 ### Run
@@ -77,55 +107,12 @@ uv run python -m kazo
 docker compose up -d
 ```
 
+Data persists in `./data/` via volume mount.
+
 ## Tests
 
 ```bash
-cd kazo
 uv run pytest
 ```
 
-42 tests covering services, database, Claude CLI client, receipt handlers, and categories.
-
-## Project Structure
-
-```
-kazo/
-├── kazo/
-│   ├── main.py              # Bot init, polling, auth middleware
-│   ├── config.py            # Pydantic settings from env
-│   ├── categories.py        # 14 defaults + per-chat custom
-│   ├── claude/client.py     # CLI subprocess wrapper with retry
-│   ├── db/
-│   │   ├── database.py      # SQLite init, WAL, singleton
-│   │   └── models.py        # Expense, Subscription dataclasses
-│   ├── services/
-│   │   ├── expense_service.py
-│   │   ├── currency_service.py
-│   │   ├── subscription_service.py
-│   │   └── summary_service.py
-│   ├── handlers/
-│   │   ├── common.py        # /start, /help, /undo, text parsing
-│   │   ├── receipts.py      # Photo + document receipt parsing
-│   │   ├── subscriptions.py
-│   │   ├── summary.py
-│   │   ├── categories.py
-│   │   └── currencies.py
-│   ├── charts/templates.py  # Plotly visualizations
-│   └── prompts/             # System prompts for Claude
-├── tests/
-├── pyproject.toml
-├── Dockerfile
-├── docker-compose.yml
-└── .env.example
-```
-
-## Currency Support
-
-31 currencies via Frankfurter.dev API with SQLite cache and stale-rate fallback. All amounts stored in EUR alongside original currency and rate.
-
-## Design Decisions
-
-- **Claude CLI over Python SDK**: Structured output via `--json-schema`, tool use for receipt images, no SDK version coupling.
-- **SQLite with WAL**: Single-writer model fits a family bot. WAL mode allows concurrent reads during writes.
-- **Singleton DB connection**: One async connection shared across handlers. SQLite doesn't benefit from connection pooling.
-- **No inline confirmation yet**: Expenses save immediately. Undo covers mistakes. Confirmation flow is planned.
+149 tests covering all services, handlers, database, Claude client, and item tracking.
