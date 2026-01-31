@@ -1,50 +1,55 @@
 # Ralph Fix Plan — Kazo
 
-## Phase 1: Testing Foundation
+## Phase 1: Testing Foundation ✓
 
-Nothing ships without tests. Ralph's first job is building the safety net.
+- [x] **Test infrastructure**: pytest + pytest-asyncio with in-memory aiosqlite fixtures
+- [x] **Service unit tests**: expense, subscription, currency, summary services
+- [x] **Claude client tests**: subprocess mocking, retry logic, error handling
+- [x] **Handler tests**: receipt handlers with photo/document support, MIME validation
+- [x] **Category + DB tests**: defaults, custom CRUD, schema constraints
 
-- [ ] **Test infrastructure**: Set up pytest + pytest-asyncio. Create `tests/conftest.py` with: in-memory aiosqlite fixture (init schema, yield, close), mock Claude CLI fixture (patch `asyncio.create_subprocess_exec` to return canned JSON), mock httpx fixture for currency API responses. Add pytest + pytest-asyncio to dev dependencies.
-- [ ] **Service unit tests**: `tests/test_expense_service.py`, `tests/test_subscription_service.py`, `tests/test_currency_service.py`, `tests/test_summary_service.py`. Cover: save/retrieve/query for each, edge cases (empty results, missing fields, duplicate entries), currency conversion with mocked API and cached rates.
-- [ ] **Claude client tests**: `tests/test_claude_client.py`. Mock subprocess responses: valid JSON, malformed JSON, timeout, non-zero exit code, missing `structured_output` field, empty result. Verify each case is handled correctly.
-- [ ] **Handler tests**: `tests/test_handlers.py`. Use aiogram test utilities or mock Message/Bot objects. Test: valid expense text → correct response, invalid text → error message, receipt photo flow, subscription commands with valid/invalid args, summary with empty DB.
-- [ ] **E2E integration test**: `tests/test_e2e.py`. Full flow with mocked Claude: send text → parse → convert currency → save → query summary → generate chart → verify PNG exists. Also receipt flow. This is the regression safety net.
+## Phase 2: Fix Architectural Weaknesses ✓
 
-## Phase 2: Fix Architectural Weaknesses
+- [x] **Intent classification**: Messages without numbers silently skipped (no wasted API calls)
+- [x] **Claude client hardening**: Retry logic (1 retry on timeout/error), DEBUG logging of raw responses
+- [x] **Receipt improvements**: Document support (PDF, PNG, JPG, WEBP, HEIC, HEIF), total validation (>10% drift warning), unified temp file cleanup
+- [x] **DB transaction safety**: Reviewed — single-statement writes already atomic in SQLite, no changes needed
 
-Address the problems called out in PROMPT.md before adding features.
+## Phase 3: Core UX (Partial) ✓
 
-- [ ] **Intent classification**: Before sending every text to Claude for expense parsing, add a lightweight intent check. Claude classifies the message as `expense`, `query`, or `other`. For `other`, respond with a helpful message instead of wasting a full parse call. Add a new `--json-schema` for intent: `{"intent": "expense"|"query"|"other"}`.
-- [ ] **Claude client hardening**: Add retry logic (1 retry on timeout). Log full Claude response at DEBUG level. Validate `--tools ""` actually works (test it). Better error messages that include what Claude returned. Structured logging of latency per call.
-- [ ] **Error boundaries**: Add a decorator or middleware that wraps all handlers with try/except, logs traceback, sends "Something went wrong, try again" to user. Currently errors in handlers can cause silent failures.
-- [ ] **Receipt improvements**: Accept document messages (PDF, forwarded images) not just photos. Validate parsed total: if items exist and their sum differs from total by >10%, flag it in the response. Fix temp file cleanup to cover the download phase too.
-- [ ] **DB transaction safety**: Wrap multi-step writes in explicit transactions. Document that the singleton connection is intentional for SQLite's single-writer model.
+- [x] **Undo**: `/undo` deletes last expense per chat with confirmation message
+- [x] **Chart temp files**: Proper cleanup in finally blocks
+- [x] **Inline confirmation**: After parsing expense, show [Confirm] [Cancel] inline keyboard. Only save on Confirm. Pending expires after 5 min.
+- [ ] **Edit**: `/edit` shows last expense. User replies with corrections. `/edit 42` for specific expense. Claude parses correction against original.
+- [ ] **Conversational edits via replies**: Detect reply_to_message, look up expense via message_id mapping, pass original + correction to Claude, update DB.
+- [ ] **Natural language queries**: "how much on groceries?" → detect query intent → fetch DB data → Claude generates answer. Optionally attach chart.
+- [ ] **Multi-message expense**: Low-confidence parse → bot asks clarifying question. Pending state per (chat_id, user_id) with 5-min TTL.
 
-## Phase 3: Core UX
+## Phase 4: Useful Features (Partial)
 
-Daily-use features that make Kazo actually pleasant.
+- [x] **Subscription rate refresh**: `/subs` refreshes EUR amounts via current exchange rates before displaying
+- [ ] **Error boundaries**: Decorator/middleware wrapping all handlers with try/except. Log traceback, send "Something went wrong" to user.
+- [ ] **Budget tracking**: `/setbudget 2000` monthly EUR budget. `/setbudget groceries 500` per-category. New `budgets` table. `/summary` shows budget vs actual with progress bar.
+- [ ] **Export CSV**: `/export` current month. `/export 2025-01` specific month. CSV as Telegram document.
+- [ ] **Better charts**: Custom date ranges (`/summary week`, `/summary Q1`). Cumulative spending overlay. Budget line when set.
+- [ ] **Stats**: `/stats` — all-time total, monthly avg, top 5 categories/stores, biggest expense, month-over-month comparison.
+- [ ] **Expense search**: `/search coffee` matches description/store/items. `/search coffee 2025-01` with date filter.
+- [ ] **Subscription billing dates**: `billing_day` column. `/addsub Netflix 15.99 EUR monthly 15`. Show upcoming billing in `/subs`.
+- [ ] **Backup**: `/backup` sends SQLite DB file as Telegram document.
+- [ ] **Recurring detection**: After saving, check if same store + similar amount (±20%) appeared 2+ times in 3 months. Suggest adding as subscription.
 
-- [ ] **Inline confirmation**: After parsing an expense, show inline keyboard [Confirm] [Edit] [Cancel]. Only save to DB on Confirm. Auto-confirm after 5 min (use aiogram callback query + scheduled task). This prevents wrong expenses from polluting the data.
-- [ ] **Undo**: `/undo` deletes the most recent expense in this chat (must be < 1 hour old). Show what was deleted. Simple and essential.
-- [ ] **Edit**: `/edit` shows last expense with current values. User replies with corrections. `/edit 42` for specific expense. Claude parses the correction against original data.
-- [ ] **Conversational edits via replies**: When user replies to a bot expense message, detect via `reply_to_message`, look up the expense via message_id→expense_id mapping table, pass original + correction to Claude, update DB. See `specs/conversational-mode.md`.
-- [ ] **Natural language queries**: "how much did I spend on groceries?" or "what was my biggest expense last week?" → detect query intent → fetch relevant DB data → pass to Claude with data context → Claude generates natural language answer. Optionally attach a chart.
-- [ ] **Multi-message expense**: If Claude returns low-confidence parse (missing amount or ambiguous), bot asks clarifying question. Track pending state per (chat_id, user_id) with 5-min TTL. Next message completes it.
+## Phase 5: Hardening & Deploy
 
-## Phase 4: Useful Features
+- [ ] **Error boundaries**: Wrap all handlers with try/except middleware. Log tracebacks, send generic error to user. No silent failures.
+- [ ] **Rate limiting**: Per-chat Claude call limits (e.g., 30/hour) to prevent abuse. Track in memory or DB.
+- [ ] **Health check endpoint**: Simple HTTP endpoint for Docker/monitoring. Reports DB connectivity, Claude CLI availability.
+- [ ] **Structured logging**: Replace print/logging.info with structured JSON logs. Include chat_id, user_id, handler name, latency.
+- [ ] **CI pipeline**: GitHub Actions — run tests on push, lint with ruff, type check with pyright.
+- [ ] **Production DB**: Migrate from file SQLite to volume-mounted path. Add backup cron job.
+- [ ] **Graceful shutdown**: Handle SIGTERM properly — finish current handler, close DB, stop polling.
 
-Build on the solid foundation.
+## Completed (Pre-Ralph)
 
-- [ ] **Budget tracking**: `/setbudget 2000` sets monthly EUR budget. `/setbudget groceries 500` per-category. `/summary` shows budget vs actual with progress bar. New `budgets` table: `(chat_id, category TEXT NULL, amount_eur, period DEFAULT 'monthly')`.
-- [ ] **Export CSV**: `/export` current month. `/export 2025-01` specific month. Generate CSV in memory, send as Telegram document. Columns: date, amount, currency, EUR amount, category, store, description.
-- [ ] **Better charts**: Custom date ranges (`/summary week`, `/summary Q1`, `/summary 2025-01 2025-03`). Cumulative spending line overlay on daily chart. Budget line on monthly chart when budget is set.
-- [ ] **Stats**: `/stats` — all-time total, monthly average, top 5 categories, top 5 stores, biggest single expense, current month vs previous month comparison.
-- [ ] **Expense search**: `/search coffee` finds expenses matching description/store/items. `/search coffee 2025-01` with date filter.
-- [ ] **Subscription billing dates**: Extend subscriptions table with `billing_day`. `/addsub Netflix 15.99 EUR monthly 15` (bills on 15th). Show upcoming billing in `/subs`.
-- [ ] **Backup**: `/backup` sends the SQLite DB file as a Telegram document. Simple, no-nonsense data export.
-- [ ] **Recurring detection**: After saving an expense, check if same store + similar amount (±20%) appeared 2+ times in last 3 months. If so, suggest: "You seem to pay Store X ~€Y monthly. Add as subscription? /addsub Store X Y EUR monthly".
-
-## Completed
 - [x] Project scaffolding (pyproject.toml, UV, project structure)
 - [x] Claude CLI wrapper (ask_claude, ask_claude_structured)
 - [x] Database schema + singleton connection with WAL
@@ -64,5 +69,4 @@ Build on the solid foundation.
 - Conventional commits: `feat:`, `fix:`, `test:`, `refactor:`
 - Run `cd kazo && uv sync` before testing
 - Claude Code CLI as subprocess, NOT Python SDK
-- Phases are sequential gates: finish Phase 1 before starting Phase 2
 - Test coverage is mandatory for every new feature
