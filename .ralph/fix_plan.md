@@ -95,6 +95,7 @@ EUR is hardcoded across ~40 places in the codebase (display strings, comparisons
 - [x] **Backup**: `/backup` sends SQLite DB file as Telegram document.
 - [x] **Recurring detection**: After saving, check if same store + similar amount (±20%) appeared 2+ times in 3 months. Suggest adding as subscription.
 - [x] **Natural language queries**: "how much on groceries?" → detect query intent → fetch DB data → Claude generates answer. Optionally attach chart.
+- [ ] **Item parsing from text messages**: When user lists items with prices in a text message (e.g., "carrefour tomatoes 2.50 potatoes 1.80 salad 2.40"), parse each item individually and save to `expense_items` table — same as receipt flow. Update expense parsing prompt to return `items` array with `{name, price}` when per-item prices are provided. Handler saves to `expense_items` via existing `_save_items_from_json`. Without per-item prices (just "tomatoes potatoes salad 6.70"), store item names without prices for searchability.
 
 ## Phase 10: Hardening & Deploy
 

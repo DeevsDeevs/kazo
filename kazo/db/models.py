@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import datetime
 
 
 @dataclass(slots=True)
@@ -15,7 +15,7 @@ class Expense:
     category: str | None
     items_json: str | None
     source: str
-    expense_date: date
+    expense_date: str
     note: str | None = None
     created_at: datetime | None = None
 

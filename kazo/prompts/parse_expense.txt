@@ -11,6 +11,12 @@ Extract these fields from the user's message:
 - store: business name if mentioned, otherwise null. Normalize casing (e.g. "mcdonalds" -> "McDonald's").
 - description: brief summary of what was purchased. For refunds, prefix with "Refund: ".
 - note: optional user note/comment/memo/reason. Extract if the user explicitly provides one with keywords like "note", "comment", "memo", "reason", "because", "for" (when indicating purpose beyond the item). null if no note provided. Do NOT infer notes — only extract explicitly stated ones.
+- items: array of individual items when the user lists multiple products. Each item has "name" (string, in English), "price" (number or null), and "quantity" (number, default 1). Extract items when:
+  - User lists items with prices: "tomatoes 2.50 potatoes 1.80 salad 2.40" -> items with prices
+  - User lists items without prices: "bought tomatoes potatoes and salad total 6.70" -> items with null prices (names only for searchability)
+  - Single item purchase: "coffee 4.50" -> null (no items array needed, description is enough)
+  - Always translate item names to English (e.g. "pommes de terre" -> "potatoes") but keep brand names as-is.
+  Set to null when there's just a single item or no itemization.
 - expense_date: ISO YYYY-MM-DD format. Resolve relative dates from today ({today}):
   - "today" / no date mentioned -> {today}
   - "yesterday" -> the day before {today}
@@ -56,6 +62,9 @@ Examples:
 - "3k on rent" -> amount=3000, currency={base_currency}, category=housing, store=null, description="Rent", expense_date={today}, note=null
 - "dinner 45 note birthday celebration" -> amount=45, currency={base_currency}, category=dining, store=null, description="Dinner", expense_date={today}, note="Birthday celebration"
 - "50 on flowers because anniversary" -> amount=50, currency={base_currency}, category=gifts, store=null, description="Flowers", expense_date={today}, note="Anniversary"
+- "carrefour tomatoes 2.50 potatoes 1.80 salad 2.40" -> amount=6.70, currency={base_currency}, category=groceries, store="Carrefour", description="Tomatoes, potatoes, and salad", items=[{{"name":"Tomatoes","price":2.50}},{{"name":"Potatoes","price":1.80}},{{"name":"Salad","price":2.40}}]
+- "lidl bought milk bread eggs cheese total 12.30" -> amount=12.30, currency={base_currency}, category=groceries, store="Lidl", description="Milk, bread, eggs, and cheese", items=[{{"name":"Milk","price":null}},{{"name":"Bread","price":null}},{{"name":"Eggs","price":null}},{{"name":"Cheese","price":null}}]
+- "netto pommes de terre 1.50 lait 0.90 pain 1.20" -> amount=3.60, currency={base_currency}, category=groceries, store="Netto", description="Potatoes, milk, and bread", items=[{{"name":"Potatoes","price":1.50}},{{"name":"Milk","price":0.90}},{{"name":"Bread","price":1.20}}]
 
 The user may write in any language. Parse the expense regardless of language and always return English field values.
 

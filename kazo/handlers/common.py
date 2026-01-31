@@ -1,3 +1,4 @@
+import json
 import logging
 import re
 from datetime import date, datetime
@@ -40,6 +41,18 @@ EXPENSE_SCHEMA = {
         "description": {"type": "string", "minLength": 1},
         "note": {"type": ["string", "null"]},
         "expense_date": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+        "items": {
+            "type": ["array", "null"],
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "price": {"type": ["number", "null"]},
+                    "quantity": {"type": "number", "default": 1},
+                },
+                "required": ["name"],
+            },
+        },
     },
     "required": ["amount", "currency", "category", "description", "expense_date"],
     "additionalProperties": False,
@@ -366,6 +379,8 @@ async def handle_text_expense(message: Message):
 
     store = parsed.get("store")
     note = parsed.get("note")
+    items = parsed.get("items")
+    items_json = json.dumps(items) if items else None
     expense_date = parsed.get("expense_date", date.today().isoformat())
     try:
         datetime.strptime(expense_date, "%Y-%m-%d")
@@ -385,7 +400,7 @@ async def handle_text_expense(message: Message):
         amount_eur=amount_eur,
         exchange_rate=rate,
         category=category,
-        items_json=None,
+        items_json=items_json,
         source="text",
         expense_date=expense_date,
         note=note,
@@ -396,11 +411,28 @@ async def handle_text_expense(message: Message):
     cat_note = " (new category)" if is_new_category else ""
     currency_note = f" ({amount} {currency})" if currency != base else ""
 
+    items_text = ""
+    if items:
+        item_lines = []
+        for item in items:
+            name = item.get("name", "?")
+            price = item.get("price")
+            qty = item.get("quantity", 1)
+            if price is not None:
+                line = f"  {name}: {price:.2f}" + (f" x{qty:.0f}" if qty != 1 else "")
+            else:
+                line = f"  {name}" + (f" x{qty:.0f}" if qty != 1 else "")
+            item_lines.append(line)
+        items_text = "\n🛒 Items:\n" + "\n".join(item_lines)
+
     display_text = (
         f"✅ {parsed.get('description', 'Expense recorded')}\n"
         f"💰 {format_amount(amount_eur, base)}{currency_note}\n"
         f"🏷 {category}{cat_note}\n"
-        f"📅 {expense_date}" + (f"\n🏪 {store}" if store else "") + (f"\n📝 {note}" if note else "")
+        f"📅 {expense_date}"
+        + (f"\n🏪 {store}" if store else "")
+        + (f"\n📝 {note}" if note else "")
+        + items_text
     )
 
     await store_pending(message, expense, display_text)
