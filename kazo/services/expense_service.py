@@ -23,7 +23,7 @@ async def save_expense(expense: Expense) -> int:
             expense.category,
             expense.items_json,
             expense.source,
-            expense.expense_date.isoformat(),
+            expense.expense_date if isinstance(expense.expense_date, str) else expense.expense_date.isoformat(),
             expense.note,
         ),
     )
