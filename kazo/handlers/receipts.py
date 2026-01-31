@@ -41,20 +41,32 @@ RECEIPT_SCHEMA = {
     "required": ["total", "currency", "category", "expense_date"],
 }
 
+SUPPORTED_DOC_MIMES = {
+    "application/pdf",
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/heic",
+    "image/heif",
+}
 
-@router.message(F.photo)
-async def handle_receipt_photo(message: Message, bot: Bot):
-    if not message.from_user:
-        return
+MIME_TO_SUFFIX = {
+    "application/pdf": ".pdf",
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+    "image/heic": ".heic",
+    "image/heif": ".heif",
+}
 
-    await message.answer("Processing receipt...")
 
-    photo = message.photo[-1]
-    file = await bot.get_file(photo.file_id)
+async def _parse_and_save_receipt(message: Message, bot: Bot, file_id: str, suffix: str):
+    """Download a file, parse it as a receipt via Claude, and save the expense."""
+    file = await bot.get_file(file_id)
 
     tmp_path: str | None = None
     try:
-        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
             tmp_path = tmp.name
             await bot.download_file(file.file_path, tmp)
 
@@ -72,7 +84,7 @@ async def handle_receipt_photo(message: Message, bot: Bot):
         )
     except Exception:
         logger.exception("Failed to parse receipt")
-        await message.answer("Sorry, I couldn't read that receipt. Try a clearer photo.")
+        await message.answer("Sorry, I couldn't read that receipt. Try a clearer image.")
         return
     finally:
         if tmp_path:
@@ -137,3 +149,29 @@ async def handle_receipt_photo(message: Message, bot: Bot):
         + (f"\n🏪 {store}" if store else "")
         + items_text
     )
+
+
+@router.message(F.photo)
+async def handle_receipt_photo(message: Message, bot: Bot):
+    if not message.from_user:
+        return
+
+    await message.answer("Processing receipt...")
+    photo = message.photo[-1]
+    await _parse_and_save_receipt(message, bot, photo.file_id, ".jpg")
+
+
+@router.message(F.document)
+async def handle_receipt_document(message: Message, bot: Bot):
+    if not message.from_user:
+        return
+
+    doc = message.document
+    mime = doc.mime_type or ""
+
+    if mime not in SUPPORTED_DOC_MIMES:
+        return
+
+    await message.answer("Processing receipt document...")
+    suffix = MIME_TO_SUFFIX.get(mime, ".bin")
+    await _parse_and_save_receipt(message, bot, doc.file_id, suffix)

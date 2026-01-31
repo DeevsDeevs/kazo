@@ -28,8 +28,8 @@
 
 ## Phase 4: Enhancements
 
-- [ ] 4.1 Subscription rate refresh on /subs
-- [ ] 4.2 Document-type receipt support (PDF)
+- [x] 4.1 Subscription rate refresh on /subs
+- [x] 4.2 Document-type receipt support (PDF) — already implemented in receipts.py
 
 ## Discoveries
 

@@ -1,0 +1,25 @@
+# .ralphrc - Ralph project configuration
+# Project: Kazo (family finance Telegram bot)
+
+PROJECT_NAME="kazo"
+PROJECT_TYPE="python"
+
+# Loop settings — generous budget, 15 min per iteration
+MAX_CALLS_PER_HOUR=500
+CLAUDE_TIMEOUT_MINUTES=15
+CLAUDE_OUTPUT_FORMAT="json"
+
+# Tool permissions — UV for Python, git for commits, pytest via uv run
+ALLOWED_TOOLS="Write,Read,Edit,Bash(git *),Bash(uv *),Bash(cd kazo *),Bash(python *),Bash(docker *),Bash(cat *),Bash(ls *),Bash(find *),Bash(mkdir *)"
+
+# Session management — keep context between loops
+SESSION_CONTINUITY=true
+SESSION_EXPIRY_HOURS=24
+
+# Task sources
+TASK_SOURCES="local"
+
+# Circuit breaker — stop if stuck
+CB_NO_PROGRESS_THRESHOLD=3
+CB_SAME_ERROR_THRESHOLD=5
+CB_OUTPUT_DECLINE_THRESHOLD=70

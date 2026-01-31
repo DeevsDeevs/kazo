@@ -1,0 +1,9 @@
+services:
+  kazo:
+    build: .
+    env_file: .env
+    volumes:
+      - ./data:/app/data
+    environment:
+      - DB_PATH=/app/data/kazo.db
+    restart: unless-stopped
