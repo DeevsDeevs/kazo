@@ -73,7 +73,9 @@ async def _build_receipt_display(pending: PendingExpense) -> str:
     currency = expense.original_currency
     items = pending.items or []
 
-    total = sum(i["price"] for i in items) if items else expense.amount
+    total = sum(i["price"] for i in items if i.get("price") is not None) if items else expense.amount
+    if not total:
+        total = expense.amount
 
     amount_eur = total * (expense.amount_eur / expense.amount) if expense.amount else total
 

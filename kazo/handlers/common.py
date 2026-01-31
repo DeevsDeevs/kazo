@@ -419,7 +419,7 @@ async def handle_text_expense(message: Message):
             price = item.get("price")
             qty = item.get("quantity", 1)
             if price is not None:
-                line = f"  {name}: {price:.2f}" + (f" x{qty:.0f}" if qty != 1 else "")
+                line = f"  {name}: {price:.2f} {currency}" + (f" x{qty:.0f}" if qty != 1 else "")
             else:
                 line = f"  {name}" + (f" x{qty:.0f}" if qty != 1 else "")
             item_lines.append(line)
