@@ -14,6 +14,7 @@ CURRENCY_SYMBOLS: dict[str, str] = {
     "CZK": "K\u010d",
     "HUF": "Ft",
     "RON": "lei",
+    "RUB": "₽",
     "BGN": "лв",
     "TRY": "\u20ba",
     "BRL": "R$",
@@ -42,7 +43,7 @@ def currency_symbol(code: str) -> str:
 
 def format_amount(amount: float, currency_code: str) -> str:
     sym = currency_symbol(currency_code)
-    if sym in ("\u20ac", "$", "\u00a3", "\u00a5", "\u20b9", "\u20a9", "\u20ba", "\u20aa", "\u20b1"):
+    if sym in ("\u20ac", "$", "\u00a3", "\u00a5", "\u20b9", "\u20a9", "\u20ba", "\u20aa", "\u20b1", "₽"):
         return f"{sym}{amount:.2f}"
     return f"{amount:.2f} {sym}"
 

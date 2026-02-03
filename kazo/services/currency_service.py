@@ -37,6 +37,7 @@ SUPPORTED_CURRENCIES: frozenset[str] = frozenset(
         "PHP",
         "PLN",
         "RON",
+        "RUB",
         "SEK",
         "SGD",
         "THB",
@@ -97,11 +98,9 @@ async def _cache_rate(from_currency: str, to_currency: str, rate: float) -> None
 
 async def _fetch_rate(from_currency: str, to_currency: str) -> float:
     logger.info("Fetching live rate for %s -> %s", from_currency, to_currency)
+    url = f"{settings.exchange_rate_url}/{from_currency}"
     async with httpx.AsyncClient(timeout=10.0) as client:
-        resp = await client.get(
-            settings.frankfurter_url,
-            params={"from": from_currency, "to": to_currency},
-        )
+        resp = await client.get(url)
         resp.raise_for_status()
         data = resp.json()
         rate = data["rates"][to_currency]

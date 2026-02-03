@@ -1,4 +1,4 @@
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -25,7 +25,10 @@ class Settings(BaseSettings):
     rate_limit_per_hour: int = 30
     debug: bool = False
     health_check_port: int = 8080
-    frankfurter_url: str = "https://api.frankfurter.dev/v1/latest"
+    exchange_rate_url: str = Field(
+        default="https://open.er-api.com/v6/latest",
+        validation_alias="frankfurter_url",
+    )
     exchange_rate_cache_hours: int = 24
 
 
