@@ -262,7 +262,7 @@ async def _handle_query(message: Message):
         ),
         chat_id=message.chat.id,
     )
-    await message.answer(answer)
+    await message.answer(answer, parse_mode="Markdown")
 
 
 async def _handle_conversational_intent(message: Message, intent: str, args: str | None):
@@ -318,7 +318,8 @@ async def _handle_conversational_intent(message: Message, intent: str, args: str
                     "If they seem to want to log an expense, remind them to include an amount."
                 ),
                 chat_id=message.chat.id,
-            )
+            ),
+            parse_mode="Markdown",
         )
 
 
