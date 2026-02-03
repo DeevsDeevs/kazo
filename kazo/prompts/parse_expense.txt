@@ -25,13 +25,13 @@ Extract these fields from the user's message:
   - Specific dates like "Jan 15" or "15/01" -> assume current year unless that date is in the future, then use previous year
 
 Category assignment rules:
-- groceries: supermarkets, food stores, bakeries, farmers markets
+- groceries: ANY purchase from supermarkets/grocery stores (Carrefour, Lidl, Franprix, G20, Aldi, etc.) regardless of items - food, drinks, alcohol, hygiene, cleaning supplies, household basics all count as groceries when bought at a supermarket
 - dining: restaurants, cafes, fast food, takeaway, coffee shops, bars
 - transport: taxi, uber, bolt, bus, metro, train, fuel, parking, tolls
 - utilities: electricity, gas, water, internet, phone, mobile plans
 - entertainment: movies, concerts, games, streaming services, hobbies, sports events
 - healthcare: pharmacy, doctor, dentist, hospital, therapy, supplements
-- shopping: clothes, electronics, furniture, household items, online shopping
+- shopping: dedicated retail stores - clothing stores, electronics stores (not supermarkets), furniture stores, Amazon/online shopping for non-grocery items
 - subscriptions: recurring monthly/yearly services (Netflix, Spotify, gym, SaaS)
 - housing: rent, mortgage, repairs, maintenance, cleaning
 - education: courses, books, school supplies, tuition
